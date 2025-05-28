@@ -2,32 +2,48 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { HabitTemplates } from "@/components/habit-templates"
-import { TemplateApplicationModal } from "@/components/template-application-modal"
-import { ArrowLeft, Sparkles, Target } from "lucide-react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
 
-interface HabitTemplate {
-  id: string
-  name: string
-  description: string
-  category: string
-  difficulty: "Beginner" | "Intermediate" | "Advanced"
-  duration: string
-  frequency: string
-  tasks: string[]
-  benefits: string[]
-  tips: string[]
-  icon: any
-}
+import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/components/ui/use-toast"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+import { CalendarIcon } from "@radix-ui/react-icons"
+import { HABIT_TEMPLATES } from "@/components/habit-templates"
+
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Habit name must be at least 2 characters.",
+  }),
+  description: z.string().optional(),
+  frequency: z.string().min(1, {
+    message: "Please select a frequency.",
+  }),
+  startDate: z.date(),
+})
+
+const TemplateApplicationFormSchema = z.object({
+  startDate: z.date(),
+})
 
 export default function TemplatesPage() {
   const router = useRouter()
-  const [userData, setUserData] = useState<any>(null)
-  const [selectedTemplate, setSelectedTemplate] = useState<HabitTemplate | null>(null)
-  const [showApplicationModal, setShowApplicationModal] = useState(false)
+  const { toast } = useToast()
+  const [userData, setUserData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showApplicationModal, setShowApplicationModal] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
 
   useEffect(() => {
     const storedUserData = localStorage.getItem("userData")
@@ -46,187 +62,288 @@ export default function TemplatesPage() {
 
     setUserData(parsedUserData)
     setLoading(false)
+
+    // Check for quick-add parameter
+    const urlParams = new URLSearchParams(window.location.search)
+    const quickAddId = urlParams.get("quickAdd")
+    if (quickAddId) {
+      // Find and auto-select the template
+      const template = HABIT_TEMPLATES.find((t) => t.id === quickAddId)
+      if (template) {
+        setSelectedTemplate(template)
+        setShowApplicationModal(true)
+      }
+    }
   }, [router])
 
-  const handleSelectTemplate = (template: HabitTemplate) => {
-    setSelectedTemplate(template)
-    setShowApplicationModal(true)
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      frequency: "",
+      startDate: new Date(),
+    },
+  })
+
+  const templateApplicationForm = useForm<z.infer<typeof TemplateApplicationFormSchema>>({
+    resolver: zodResolver(TemplateApplicationFormSchema),
+    defaultValues: {
+      startDate: new Date(),
+    },
+  })
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Do something with the form values.
+    // ✅ This will be type-safe and validated.
+    console.log(values)
+
+    const newHabit = {
+      ...values,
+      userId: userData.id,
+    }
+
+    try {
+      const response = await fetch("/api/habits", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newHabit),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success!",
+          description: "Your habit has been created.",
+        })
+        form.reset()
+      } else {
+        toast({
+          title: "Error!",
+          description: "Something went wrong. Please try again.",
+        })
+      }
+    } catch (error) {
+      console.error("Error creating habit:", error)
+      toast({
+        title: "Error!",
+        description: "Something went wrong. Please try again.",
+      })
+    }
   }
 
-  const handleApplyTemplate = (selectedTasks: string[], targetCategory: string, customizations: any) => {
-    if (!userData) return
+  async function onApplyTemplate(values: z.infer<typeof TemplateApplicationFormSchema>) {
+    if (!selectedTemplate) return
 
-    // Create new tasks from template
-    const newTasks = selectedTasks.map((taskText, index) => ({
-      id: `${Date.now()}-${index}`,
-      text: taskText,
-      completed: false,
-      scheduledDate: customizations.startDate,
-      templateId: selectedTemplate?.id,
-      templateName: selectedTemplate?.name,
-      reminderTime: customizations.reminderTime,
-      customGoal: customizations.customGoal,
-    }))
-
-    // Add tasks to the selected category
-    const updatedUserData = { ...userData }
-    if (!updatedUserData.tasks[targetCategory]) {
-      updatedUserData.tasks[targetCategory] = []
+    const newHabit = {
+      name: selectedTemplate.name,
+      description: selectedTemplate.description,
+      frequency: selectedTemplate.frequency,
+      startDate: values.startDate,
+      userId: userData.id,
     }
-    updatedUserData.tasks[targetCategory] = [...updatedUserData.tasks[targetCategory], ...newTasks]
 
-    // Track template usage
-    if (!updatedUserData.appliedTemplates) {
-      updatedUserData.appliedTemplates = []
+    try {
+      const response = await fetch("/api/habits", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newHabit),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Success!",
+          description: "Your habit has been created.",
+        })
+        templateApplicationForm.reset()
+        setShowApplicationModal(false)
+      } else {
+        toast({
+          title: "Error!",
+          description: "Something went wrong. Please try again.",
+        })
+      }
+    } catch (error) {
+      console.error("Error creating habit:", error)
+      toast({
+        title: "Error!",
+        description: "Something went wrong. Please try again.",
+      })
     }
-    updatedUserData.appliedTemplates.push({
-      templateId: selectedTemplate?.id,
-      templateName: selectedTemplate?.name,
-      appliedDate: new Date().toISOString(),
-      category: targetCategory,
-      tasksCount: selectedTasks.length,
-      customizations,
-    })
-
-    // Save to localStorage
-    localStorage.setItem("userData", JSON.stringify(updatedUserData))
-    setUserData(updatedUserData)
-
-    // Show success message and redirect
-    alert(
-      `Successfully added ${selectedTasks.length} tasks from "${selectedTemplate?.name}" to your ${targetCategory} category!`,
-    )
-    router.push("/dashboard")
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-forest-50 to-stone-50">
-        <p className="text-forest-800">Loading...</p>
-      </div>
-    )
-  }
-
-  if (!userData) {
-    return null
+    return <div>Loading...</div>
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-forest-50 to-stone-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-forest-600 to-forest-700 text-white shadow-lg">
-        <div className="container mx-auto p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push("/dashboard")}
-                className="text-white hover:bg-white/20"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Habit Templates</h1>
-                <p className="text-forest-100">Jumpstart your growth with proven habit templates</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-forest-200" />
-              <span className="text-sm text-forest-100">
-                {userData.appliedTemplates?.length || 0} templates applied
-              </span>
-            </div>
+    <div className="container mx-auto py-10">
+      <h1 className="text-3xl font-bold mb-4">Habit Templates</h1>
+      <p className="text-muted-foreground mb-8">Choose a template to get started quickly.</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {HABIT_TEMPLATES.map((template) => (
+          <div
+            key={template.id}
+            className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300"
+          >
+            <h2 className="text-xl font-semibold mb-2">{template.name}</h2>
+            <p className="text-muted-foreground mb-4">{template.description}</p>
+            <Badge className="mb-4">{template.frequency}</Badge>
+            <Button
+              onClick={() => {
+                setSelectedTemplate(template)
+                setShowApplicationModal(true)
+              }}
+            >
+              Apply Template
+            </Button>
           </div>
-        </div>
-      </header>
+        ))}
+      </div>
 
-      <main className="container mx-auto p-4">
-        {/* Welcome Section */}
-        <Card className="mb-8 border-forest-200 bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-forest-100">
-                <Target className="h-6 w-6 text-forest-600" />
-              </div>
-              <div>
-                <CardTitle className="text-forest-800">Ready to Build Better Habits?</CardTitle>
-                <CardDescription className="text-stone-600">
-                  Choose from our collection of proven habit templates designed by experts and used by thousands of
-                  people to achieve their goals.
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-center p-4 bg-forest-50 rounded-lg">
-                <div className="text-2xl font-bold text-forest-800 mb-1">50+</div>
-                <div className="text-sm text-stone-600">Expert-designed templates</div>
-              </div>
-              <div className="text-center p-4 bg-forest-50 rounded-lg">
-                <div className="text-2xl font-bold text-forest-800 mb-1">6</div>
-                <div className="text-sm text-stone-600">Life categories covered</div>
-              </div>
-              <div className="text-center p-4 bg-forest-50 rounded-lg">
-                <div className="text-2xl font-bold text-forest-800 mb-1">100%</div>
-                <div className="text-sm text-stone-600">Customizable to your needs</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <Separator className="my-8" />
 
-        {/* Templates Grid */}
-        <HabitTemplates onSelectTemplate={handleSelectTemplate} />
+      <h2 className="text-2xl font-bold mb-4">Create Your Own Habit</h2>
+      <p className="text-muted-foreground mb-8">Customize your own habit from scratch.</p>
 
-        {/* Applied Templates History */}
-        {userData.appliedTemplates && userData.appliedTemplates.length > 0 && (
-          <Card className="mt-8 border-forest-200 bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-forest-800">Your Applied Templates</CardTitle>
-              <CardDescription className="text-stone-600">
-                Templates you've already added to your routine
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {userData.appliedTemplates.slice(-5).map((applied: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-forest-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-forest-800">{applied.templateName}</p>
-                      <p className="text-sm text-stone-600">
-                        Added {applied.tasksCount} tasks to {applied.category} •{" "}
-                        {new Date(applied.appliedDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => router.push("/dashboard")}
-                      className="border-forest-300 text-forest-600 hover:bg-forest-50"
-                    >
-                      View Tasks
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </main>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Habit Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Go to the gym" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Describe your habit" className="resize-none" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="frequency"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Frequency</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a frequency" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="startDate"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Start Date</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                      >
+                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit">Create Habit</Button>
+        </form>
+      </Form>
 
-      {/* Template Application Modal */}
-      <TemplateApplicationModal
-        isOpen={showApplicationModal}
-        onClose={() => {
-          setShowApplicationModal(false)
-          setSelectedTemplate(null)
-        }}
-        template={selectedTemplate}
-        categories={userData.categories || []}
-        onApplyTemplate={handleApplyTemplate}
-      />
+      <Dialog open={showApplicationModal} onOpenChange={setShowApplicationModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Apply Template</DialogTitle>
+            <DialogDescription>Choose a start date for your new habit.</DialogDescription>
+          </DialogHeader>
+          <Form {...templateApplicationForm}>
+            <form onSubmit={templateApplicationForm.handleSubmit(onApplyTemplate)} className="space-y-8">
+              <FormField
+                control={templateApplicationForm.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Start Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[240px] pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit">Apply</Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
