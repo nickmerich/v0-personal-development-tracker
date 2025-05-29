@@ -179,7 +179,20 @@ export function EnhancedJournalModal({ isOpen, onClose, date }: EnhancedJournalM
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    // If no date provided or date is invalid, use today's date
+    const date = dateString ? new Date(dateString) : new Date()
+
+    // Ensure we have a valid date
+    if (isNaN(date.getTime())) {
+      return new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    }
+
+    return date.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -210,7 +223,7 @@ export function EnhancedJournalModal({ isOpen, onClose, date }: EnhancedJournalM
         <DialogHeader>
           <DialogTitle className="text-forest-800 flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-forest-600" />
-            Daily Journal - {formatDate(date)}
+            Daily Journal - {formatDate(date || new Date().toISOString().split("T")[0])}
             {hasUnsavedChanges && (
               <span className="text-xs bg-earth-100 text-earth-800 px-2 py-1 rounded-full animate-pulse">
                 Unsaved changes

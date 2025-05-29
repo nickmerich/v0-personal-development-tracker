@@ -53,47 +53,68 @@ export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMiles
   })
 
   const handleAddMilestone = async () => {
-    if (!newMilestone.title || !newMilestone.targetValue) return
-
-    const milestone: Milestone = {
-      id: Date.now().toString(),
-      ...newMilestone,
-      completed: false,
+    // Updated validation - only require title, allow goals without numeric targets
+    if (!newMilestone.title.trim()) {
+      console.error("Goal name is required")
+      return
     }
 
-    onUpdate([...milestones, milestone])
-    setNewMilestone({
-      title: "",
-      description: "",
-      category: "",
-      targetValue: 0,
-      currentValue: 0,
-      unit: "",
-      targetDate: "",
-      reward: "",
-    })
-    setIsAddingMilestone(false)
-
-    // Play success sound
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-      const oscillator = audioContext.createOscillator()
-      const gainNode = audioContext.createGain()
+      const milestone: Milestone = {
+        id: Date.now().toString(),
+        title: newMilestone.title,
+        description: newMilestone.description,
+        category: newMilestone.category || "personal",
+        targetValue: newMilestone.targetValue || 1, // Default to 1 for non-numeric goals
+        currentValue: newMilestone.currentValue || 0,
+        unit: newMilestone.unit || "completion",
+        targetDate: newMilestone.targetDate,
+        reward: newMilestone.reward,
+        completed: false,
+      }
 
-      oscillator.connect(gainNode)
-      gainNode.connect(audioContext.destination)
+      const updatedMilestones = [...milestones, milestone]
+      onUpdate(updatedMilestones)
 
-      oscillator.frequency.setValueAtTime(600, audioContext.currentTime)
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.1)
+      // Reset form
+      setNewMilestone({
+        title: "",
+        description: "",
+        category: "",
+        targetValue: 0,
+        currentValue: 0,
+        unit: "",
+        targetDate: "",
+        reward: "",
+      })
+      setIsAddingMilestone(false)
 
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime)
-      gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+      // Success feedback
+      console.log("Goal created successfully:", milestone.title)
 
-      oscillator.start(audioContext.currentTime)
-      oscillator.stop(audioContext.currentTime + 0.2)
-    } catch (e) {
-      // Audio not available, continue silently
+      // Play success sound
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+
+        oscillator.frequency.setValueAtTime(600, audioContext.currentTime)
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.1)
+
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime)
+        gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+
+        oscillator.start(audioContext.currentTime)
+        oscillator.stop(audioContext.currentTime + 0.2)
+      } catch (e) {
+        // Audio not available, continue silently
+      }
+    } catch (error) {
+      console.error("Error creating goal:", error)
     }
   }
 
@@ -372,7 +393,7 @@ export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMiles
           <DialogFooter>
             <Button
               onClick={handleAddMilestone}
-              disabled={!newMilestone.title || !newMilestone.targetValue}
+              disabled={!newMilestone.title.trim()}
               className={cn(
                 "bg-forest-600 text-white hover:bg-forest-700",
                 "transition-all duration-200 hover:scale-105 min-h-[44px]",

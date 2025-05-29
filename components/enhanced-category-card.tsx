@@ -6,7 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
-import { Plus, X, Calendar, CheckCircle2, Sparkles, Eye, ChevronDown, ChevronUp } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Plus, X, Calendar, CheckCircle2, Sparkles, Eye, ChevronDown, ChevronUp, Repeat, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 
@@ -19,6 +22,12 @@ interface Task {
   createdAt?: string
   completedAt?: string
   tags?: string[]
+  recurring?: {
+    enabled: boolean
+    frequency: "daily" | "weekly" | "monthly"
+    lastReset?: string
+    nextReset?: string
+  }
 }
 
 interface EnhancedCategoryCardProps {
@@ -34,18 +43,64 @@ export function EnhancedCategoryCard({ category, tasks, onUpdate }: EnhancedCate
   const [isExpanded, setIsExpanded] = useState(false)
   const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set())
   const [recentlyCompleted, setRecentlyCompleted] = useState<Set<string>>(new Set())
+  const [editingTask, setEditingTask] = useState<string | null>(null)
+  const [taskSettings, setTaskSettings] = useState({
+    recurring: false,
+    frequency: "daily" as "daily" | "weekly" | "monthly",
+  })
 
-  // Validate and sanitize tasks
-  const validatedTasks = tasks
-    .filter((task) => task && typeof task === "object" && task.id && task.text)
-    .map((task) => ({
-      ...task,
-      id: task.id || Date.now().toString(),
-      text: task.text || "Untitled Task",
-      completed: Boolean(task.completed),
-      priority: task.priority || "medium",
-      createdAt: task.createdAt || new Date().toISOString(),
-    }))
+  // Check and reset recurring tasks
+  const checkRecurringTasks = (taskList: Task[]) => {
+    const now = new Date()
+    const today = now.toISOString().split("T")[0]
+
+    return taskList.map((task) => {
+      if (!task.recurring?.enabled || !task.recurring.nextReset) return task
+
+      const nextResetDate = new Date(task.recurring.nextReset)
+      if (now >= nextResetDate) {
+        // Reset the task
+        const newNextReset = new Date(nextResetDate)
+        switch (task.recurring.frequency) {
+          case "daily":
+            newNextReset.setDate(newNextReset.getDate() + 1)
+            break
+          case "weekly":
+            newNextReset.setDate(newNextReset.getDate() + 7)
+            break
+          case "monthly":
+            newNextReset.setMonth(newNextReset.getMonth() + 1)
+            break
+        }
+
+        return {
+          ...task,
+          completed: false,
+          completedAt: undefined,
+          recurring: {
+            ...task.recurring,
+            lastReset: today,
+            nextReset: newNextReset.toISOString().split("T")[0],
+          },
+        }
+      }
+      return task
+    })
+  }
+
+  // Validate and sanitize tasks with recurring check
+  const validatedTasks = checkRecurringTasks(
+    tasks
+      .filter((task) => task && typeof task === "object" && task.id && task.text)
+      .map((task) => ({
+        ...task,
+        id: task.id || Date.now().toString(),
+        text: task.text || "Untitled Task",
+        completed: Boolean(task.completed),
+        priority: task.priority || "medium",
+        createdAt: task.createdAt || new Date().toISOString(),
+      })),
+  )
 
   const completedTasks = validatedTasks.filter((task) => task.completed).length
   const progressPercentage = validatedTasks.length > 0 ? Math.round((completedTasks / validatedTasks.length) * 100) : 0
@@ -54,23 +109,51 @@ export function EnhancedCategoryCard({ category, tasks, onUpdate }: EnhancedCate
   const displayTasks = isExpanded ? validatedTasks : validatedTasks.slice(0, 2)
   const hasMoreTasks = validatedTasks.length > 2
 
+  const calculateNextReset = (frequency: "daily" | "weekly" | "monthly") => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    switch (frequency) {
+      case "daily":
+        return tomorrow.toISOString().split("T")[0]
+      case "weekly":
+        const nextWeek = new Date()
+        nextWeek.setDate(nextWeek.getDate() + 7)
+        return nextWeek.toISOString().split("T")[0]
+      case "monthly":
+        const nextMonth = new Date()
+        nextMonth.setMonth(nextMonth.getMonth() + 1)
+        return nextMonth.toISOString().split("T")[0]
+      default:
+        return tomorrow.toISOString().split("T")[0]
+    }
+  }
+
   const handleAddTask = () => {
     if (!newTask.trim()) return
 
-    const updatedTasks = [
-      ...validatedTasks,
-      {
-        id: Date.now().toString(),
-        text: newTask.trim(),
-        completed: false,
-        createdAt: new Date().toISOString(),
-        priority: "medium" as const,
-      },
-    ]
+    const newTaskObj: Task = {
+      id: Date.now().toString(),
+      text: newTask.trim(),
+      completed: false,
+      createdAt: new Date().toISOString(),
+      priority: "medium" as const,
+    }
 
+    if (taskSettings.recurring) {
+      newTaskObj.recurring = {
+        enabled: true,
+        frequency: taskSettings.frequency,
+        lastReset: new Date().toISOString().split("T")[0],
+        nextReset: calculateNextReset(taskSettings.frequency),
+      }
+    }
+
+    const updatedTasks = [...validatedTasks, newTaskObj]
     onUpdate(updatedTasks)
     setNewTask("")
     setIsAddingTask(false)
+    setTaskSettings({ recurring: false, frequency: "daily" })
 
     // Haptic feedback for mobile
     if (navigator.vibrate) {
@@ -158,8 +241,19 @@ export function EnhancedCategoryCard({ category, tasks, onUpdate }: EnhancedCate
     onUpdate(updatedTasks)
   }
 
+  const handleUpdateTaskRecurring = (taskId: string, recurring: Task["recurring"]) => {
+    const updatedTasks = validatedTasks.map((task) => (task.id === taskId ? { ...task, recurring } : task))
+    onUpdate(updatedTasks)
+    setEditingTask(null)
+  }
+
   const handleViewAllTasks = () => {
     router.push(`/tasks/${encodeURIComponent(category)}`)
+  }
+
+  const getRecurringIcon = (task: Task) => {
+    if (!task.recurring?.enabled) return null
+    return <Repeat className="h-3 w-3 text-forest-600" title={`Repeats ${task.recurring.frequency}`} />
   }
 
   return (
@@ -232,24 +326,116 @@ export function EnhancedCategoryCard({ category, tasks, onUpdate }: EnhancedCate
                     <CheckCircle2 className="absolute -top-1 -right-1 h-3 w-3 text-forest-600 animate-ping" />
                   )}
                 </div>
-                <label
-                  htmlFor={`task-${task.id}`}
-                  className={cn(
-                    "text-sm cursor-pointer transition-all duration-200 flex-1 min-w-0",
-                    task.completed ? "line-through text-stone-500" : "text-forest-800 hover:text-forest-900",
-                    "select-none leading-relaxed", // Better line height for mobile
-                  )}
-                  style={{
-                    wordBreak: "break-word",
-                    overflowWrap: "break-word",
-                  }}
-                >
-                  {task.text}
-                </label>
+                <div className="flex-1 min-w-0">
+                  <label
+                    htmlFor={`task-${task.id}`}
+                    className={cn(
+                      "text-sm cursor-pointer transition-all duration-200 flex-1 min-w-0 block",
+                      task.completed ? "line-through text-stone-500" : "text-forest-800 hover:text-forest-900",
+                      "select-none leading-relaxed", // Better line height for mobile
+                    )}
+                    style={{
+                      wordBreak: "break-word",
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {task.text}
+                  </label>
+                  <div className="flex items-center space-x-2 mt-1">
+                    {getRecurringIcon(task)}
+                    {task.scheduledDate && <Calendar className="h-3 w-3 text-forest-600" />}
+                    {task.recurring?.enabled && (
+                      <span className="text-xs text-forest-600 bg-forest-50 px-2 py-0.5 rounded">
+                        {task.recurring.frequency}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center space-x-2 flex-shrink-0">
-                {task.scheduledDate && <Calendar className="h-3 w-3 text-forest-600" />}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-9 w-9 text-forest-600 hover:bg-forest-100 hover:text-forest-700",
+                        "transition-all duration-200 hover:scale-110 active:scale-95",
+                        "touch-manipulation",
+                      )}
+                      onClick={() => setEditingTask(task.id)}
+                    >
+                      <Settings className="h-3 w-3" />
+                      <span className="sr-only">Task settings for {task.text}</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Task Settings</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium">Task Name</Label>
+                        <p className="text-sm text-stone-600 mt-1">{task.text}</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`recurring-${task.id}`}
+                            checked={task.recurring?.enabled || false}
+                            onCheckedChange={(checked) => {
+                              const newRecurring = checked
+                                ? {
+                                    enabled: true,
+                                    frequency: task.recurring?.frequency || ("daily" as const),
+                                    lastReset: new Date().toISOString().split("T")[0],
+                                    nextReset: calculateNextReset(task.recurring?.frequency || "daily"),
+                                  }
+                                : undefined
+                              handleUpdateTaskRecurring(task.id, newRecurring)
+                            }}
+                          />
+                          <Label htmlFor={`recurring-${task.id}`} className="text-sm">
+                            Make this task recurring
+                          </Label>
+                        </div>
+
+                        {task.recurring?.enabled && (
+                          <div className="ml-6 space-y-2">
+                            <Label className="text-sm">Frequency</Label>
+                            <Select
+                              value={task.recurring.frequency}
+                              onValueChange={(value: "daily" | "weekly" | "monthly") => {
+                                handleUpdateTaskRecurring(task.id, {
+                                  ...task.recurring!,
+                                  frequency: value,
+                                  nextReset: calculateNextReset(value),
+                                })
+                              }}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {task.recurring.nextReset && (
+                              <p className="text-xs text-stone-500">
+                                Next reset: {new Date(task.recurring.nextReset).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
                 <Button
                   variant="ghost"
                   size="icon"
@@ -319,6 +505,7 @@ export function EnhancedCategoryCard({ category, tasks, onUpdate }: EnhancedCate
                 } else if (e.key === "Escape") {
                   setIsAddingTask(false)
                   setNewTask("")
+                  setTaskSettings({ recurring: false, frequency: "daily" })
                 }
               }}
               className={cn(
@@ -328,6 +515,39 @@ export function EnhancedCategoryCard({ category, tasks, onUpdate }: EnhancedCate
               )}
               autoFocus
             />
+
+            {/* Recurring task options */}
+            <div className="space-y-2 p-3 bg-forest-50/50 rounded-lg border border-forest-200">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="new-task-recurring"
+                  checked={taskSettings.recurring}
+                  onCheckedChange={(checked) => setTaskSettings((prev) => ({ ...prev, recurring: Boolean(checked) }))}
+                />
+                <Label htmlFor="new-task-recurring" className="text-sm">
+                  Make this task recurring
+                </Label>
+              </div>
+
+              {taskSettings.recurring && (
+                <Select
+                  value={taskSettings.frequency}
+                  onValueChange={(value: "daily" | "weekly" | "monthly") =>
+                    setTaskSettings((prev) => ({ ...prev, frequency: value }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
             <div className="flex space-x-2">
               <Button
                 onClick={handleAddTask}
@@ -345,6 +565,7 @@ export function EnhancedCategoryCard({ category, tasks, onUpdate }: EnhancedCate
                 onClick={() => {
                   setIsAddingTask(false)
                   setNewTask("")
+                  setTaskSettings({ recurring: false, frequency: "daily" })
                 }}
                 className="border-forest-300 text-forest-600 hover:bg-forest-50 min-h-[48px] px-6"
               >

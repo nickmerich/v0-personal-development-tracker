@@ -87,6 +87,14 @@ export function CalendarView({ userData, onJournalUpdate }: CalendarViewProps) {
     setShowJournal(true)
   }
 
+  // Add a function to open today's journal
+  const openTodaysJournal = () => {
+    const today = new Date()
+    const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+    setSelectedDate(dateString)
+    setShowJournal(true)
+  }
+
   const getExternalEvents = (day: number) => {
     // Mock external calendar events - in real app, this would come from synced calendars
     const mockEvents = [
@@ -339,7 +347,7 @@ export function CalendarView({ userData, onJournalUpdate }: CalendarViewProps) {
             setShowJournal(false)
             setSelectedDate(null)
           }}
-          date={selectedDate}
+          date={selectedDate || new Date().toISOString().split("T")[0]}
         />
       )}
 
