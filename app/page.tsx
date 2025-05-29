@@ -58,33 +58,35 @@ export default function Homepage() {
             className="object-cover"
             priority
           />
-          {/* Lighter green-tinted overlay for better brand alignment */}
-          <div className="absolute inset-0 bg-gradient-to-b from-emerald-900/30 via-emerald-800/20 to-emerald-700/40" />
-          {/* Additional light overlay for brightness */}
-          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/10" />
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/50" />
         </div>
 
         {/* Content Overlay */}
         <MobileLayout maxWidth="4xl" className="relative z-10 px-4 py-12">
           <div className="text-center space-y-8 animate-in">
-            {/* Main Heading - Following brand typography */}
+            {/* Main Heading - Updated text with green styling */}
             <div className="space-y-6">
               <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white leading-tight drop-shadow-2xl font-display">
-                Transform Your Life
-                <span className="block text-white/90">in 90 Days</span>
+                <span className="block bg-gradient-to-r from-emerald-500 to-emerald-400 bg-clip-text text-transparent">
+                  Go All In for 90 Days.
+                </span>
+                <span className="block bg-gradient-to-r from-emerald-500 to-emerald-400 bg-clip-text text-transparent">
+                  Earn Your Greatness.
+                </span>
               </h1>
 
               <h2 className="text-xl sm:text-2xl lg:text-3xl text-white/90 font-medium leading-relaxed drop-shadow-lg">
-                Your Journey to Greatness Starts Today
+                Build lasting habits, track meaningful progress, and unlock the greatness within you.
               </h2>
             </div>
 
-            {/* CTA Button - Following brand button style */}
+            {/* CTA Button - Green styling */}
             <div className="pt-8">
               <MobileButton
                 size="lg"
                 onClick={() => router.push("/setup/personal-info")}
-                className="bg-white text-gray-900 hover:bg-white/90 shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 text-lg px-8 py-4 h-auto font-semibold rounded-2xl"
+                className="bg-emerald-500 text-white hover:bg-emerald-600 shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 text-lg px-8 py-4 h-auto font-bold rounded-2xl border-2 border-emerald-400"
               >
                 <Mountain className="w-6 h-6 mr-3" />
                 Start Your Transformation
@@ -100,7 +102,7 @@ export default function Homepage() {
                     {[1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400/40 to-emerald-600/60 border-2 border-white/60 flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm"
+                        className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400/30 to-yellow-500/40 border-2 border-yellow-300/50 flex items-center justify-center text-gray-900 text-sm font-bold backdrop-blur-sm"
                       >
                         {String.fromCharCode(64 + i)}
                       </div>
@@ -124,13 +126,13 @@ export default function Homepage() {
 
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
-            <div className="w-1 h-3 bg-white/70 rounded-full mt-2 animate-pulse" />
+          <div className="w-6 h-10 border-2 border-yellow-400/50 rounded-full flex justify-center">
+            <div className="w-1 h-3 bg-yellow-400/70 rounded-full mt-2 animate-pulse" />
           </div>
         </div>
       </section>
 
-      {/* Features Section - Updated with brand colors */}
+      {/* Features Section - Enhanced with brand styling */}
       <section className="py-20 bg-white/50 backdrop-blur-sm">
         <MobileLayout>
           <div className="text-center mb-16">
@@ -147,11 +149,11 @@ export default function Homepage() {
               <MobileCard
                 key={feature.title}
                 interactive
-                className="text-center group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-white/80 backdrop-blur-sm border border-emerald-100"
+                className="text-center group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 bg-white/80 backdrop-blur-sm border border-yellow-200 hover:border-yellow-300"
               >
                 <div className="space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <feature.icon className="w-8 h-8 text-emerald-600" />
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-yellow-300">
+                    <feature.icon className="w-8 h-8 text-yellow-600" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 font-display">{feature.title}</h3>
                   <p className="text-gray-600 leading-relaxed">{feature.description}</p>
@@ -162,8 +164,8 @@ export default function Homepage() {
         </MobileLayout>
       </section>
 
-      {/* Testimonial Section - Updated with brand styling */}
-      <section className="py-20 bg-emerald-50">
+      {/* Testimonial Section - Enhanced with brand styling */}
+      <section className="py-20 bg-gradient-to-br from-yellow-50 to-amber-50">
         <MobileLayout>
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 font-display">What Our Users Say</h2>
@@ -173,10 +175,10 @@ export default function Homepage() {
           </div>
 
           <div className="max-w-4xl mx-auto">
-            <MobileCard className="overflow-hidden border-emerald-200 bg-white/80 backdrop-blur-sm">
+            <MobileCard className="overflow-hidden border-yellow-200 bg-white/90 backdrop-blur-sm shadow-xl">
               <div className="flex flex-col md:flex-row gap-6 p-2 md:p-6">
                 <div className="md:w-1/3 flex flex-col items-center text-center">
-                  <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-emerald-100 mb-4">
+                  <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-yellow-200 mb-4">
                     <Image
                       src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/testimonial-1732703063632.jpg-rlNPgokwCGh09x3yYjXqip6KzFBt1l.jpeg"
                       alt="Garrett Hughes"
@@ -192,13 +194,13 @@ export default function Homepage() {
 
                 <div className="md:w-2/3 flex items-center">
                   <div className="relative">
-                    <Quote className="absolute -top-4 -left-4 w-8 h-8 text-emerald-200 rotate-180" />
+                    <Quote className="absolute -top-4 -left-4 w-8 h-8 text-yellow-200 rotate-180" />
                     <blockquote className="text-lg md:text-xl text-gray-800 italic leading-relaxed pl-6">
                       "Nick's leadership in our team was inspiring and encouraged us to achieve our best potential. He
                       was responsible for community development, where he demonstrated an innate ability to build,
                       nurture and grow communities that still thrive today."
                     </blockquote>
-                    <Quote className="absolute -bottom-4 -right-4 w-8 h-8 text-emerald-200" />
+                    <Quote className="absolute -bottom-4 -right-4 w-8 h-8 text-yellow-200" />
                   </div>
                 </div>
               </div>
@@ -207,10 +209,10 @@ export default function Homepage() {
         </MobileLayout>
       </section>
 
-      {/* Stats Section - Matching brand guidelines exactly */}
+      {/* Stats Section - Enhanced with brand styling */}
       <section className="py-20 relative overflow-hidden">
         {/* Brand-consistent gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700"></div>
 
         <MobileLayout className="relative z-10">
           <div className="text-center mb-12">
@@ -224,10 +226,12 @@ export default function Homepage() {
             {statsNew.map((stat) => (
               <div
                 key={stat.label}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center transform transition-all duration-500 hover:scale-105 hover:bg-white/20 border border-white/20"
+                className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center transform transition-all duration-500 hover:scale-105 hover:bg-white/20 border border-white/20 hover:border-yellow-400/30"
               >
                 <div className="flex justify-center mb-4">
-                  <div className={`w-16 h-16 rounded-full ${stat.iconBg} flex items-center justify-center`}>
+                  <div
+                    className={`w-16 h-16 rounded-full ${stat.iconBg} flex items-center justify-center border border-white/20`}
+                  >
                     <stat.icon className={`w-8 h-8 ${stat.iconColor}`} />
                   </div>
                 </div>
@@ -239,8 +243,8 @@ export default function Homepage() {
         </MobileLayout>
       </section>
 
-      {/* How It Works - Updated with brand styling */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-emerald-50">
+      {/* How It Works - Enhanced with brand styling */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-yellow-50">
         <MobileLayout>
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 font-display">
@@ -254,12 +258,12 @@ export default function Homepage() {
               <div key={step.title} className="relative">
                 {/* Connection Line */}
                 {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-emerald-300 to-transparent z-0" />
+                  <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-yellow-400 to-transparent z-0" />
                 )}
 
-                <MobileCard className="relative z-10 text-center bg-white/80 backdrop-blur-sm border border-emerald-100">
+                <MobileCard className="relative z-10 text-center bg-white/90 backdrop-blur-sm border border-yellow-200 hover:border-yellow-300 hover:shadow-xl transition-all duration-300">
                   <div className="space-y-4">
-                    <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                    <div className="mx-auto w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-gray-900 text-xl font-bold border-2 border-yellow-300">
                       {index + 1}
                     </div>
                     <h3 className="text-xl font-semibold text-gray-900 font-display">{step.title}</h3>
@@ -274,7 +278,7 @@ export default function Homepage() {
             <MobileButton
               size="lg"
               onClick={() => router.push("/setup/personal-info")}
-              className="bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-2xl"
+              className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-gray-900 rounded-2xl font-bold border-2 border-yellow-300"
             >
               ⚡ Begin Your Journey Now
             </MobileButton>
@@ -282,13 +286,13 @@ export default function Homepage() {
         </MobileLayout>
       </section>
 
-      {/* Final CTA - Matching brand guidelines exactly */}
-      <section className="py-20 bg-emerald-600 text-white">
+      {/* Final CTA - Enhanced with brand styling */}
+      <section className="py-20 bg-gradient-to-br from-emerald-600 to-teal-700 text-white">
         <MobileLayout className="text-center">
           <div className="space-y-8">
             <h2 className="text-3xl sm:text-5xl font-bold leading-tight font-display">
               Ready to Transform
-              <span className="block text-emerald-200">Your Life?</span>
+              <span className="block text-yellow-300">Your Life?</span>
             </h2>
 
             <p className="text-xl text-emerald-100 max-w-2xl mx-auto">
@@ -299,13 +303,13 @@ export default function Homepage() {
               <MobileButton
                 size="lg"
                 onClick={() => router.push("/setup/personal-info")}
-                className="bg-white text-gray-900 hover:bg-gray-50 rounded-2xl font-semibold"
+                className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 hover:from-yellow-500 hover:to-yellow-600 rounded-2xl font-bold border-2 border-yellow-300"
               >
                 <Mountain className="w-5 h-5 mr-2" />
                 Start Free Today
               </MobileButton>
 
-              <p className="text-sm text-emerald-200">No credit card required • 90-day transformation guarantee</p>
+              <p className="text-sm text-yellow-200">No credit card required • 90-day transformation guarantee</p>
             </div>
           </div>
         </MobileLayout>
