@@ -58,8 +58,10 @@ export default function Homepage() {
             className="object-cover"
             priority
           />
-          {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-black/40" />
+          {/* Lighter green-tinted overlay for better brand alignment */}
+          <div className="absolute inset-0 bg-gradient-to-b from-emerald-900/30 via-emerald-800/20 to-emerald-700/40" />
+          {/* Additional light overlay for brightness */}
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/10" />
         </div>
 
         {/* Content Overlay */}
@@ -98,7 +100,7 @@ export default function Homepage() {
                     {[1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400/30 to-teal-500/40 border-2 border-white/50 flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm"
+                        className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400/40 to-emerald-600/60 border-2 border-white/60 flex items-center justify-center text-white text-sm font-bold backdrop-blur-sm"
                       >
                         {String.fromCharCode(64 + i)}
                       </div>
