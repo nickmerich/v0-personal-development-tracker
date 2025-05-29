@@ -3,13 +3,20 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { NotificationProvider } from "@/components/notification-provider"
+import { cn } from "@/lib/utils"
+import { ErrorBoundary } from "@/components/error-boundary"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "Personal Development Tracker",
   description: "Transform your life with purpose-driven daily actions",
-    generator: 'v0.dev'
+  generator: "v0.dev",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 }
 
 export default function RootLayout({
@@ -18,9 +25,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <NotificationProvider>{children}</NotificationProvider>
+    <html lang="en" className={cn("antialiased", inter.variable)}>
+      <body
+        className={cn(
+          "min-h-screen bg-gradient-to-br from-forest-50 to-stone-50 font-sans",
+          "text-forest-900 selection:bg-forest-200 selection:text-forest-900",
+        )}
+      >
+        <ErrorBoundary>
+          <NotificationProvider>
+            <div className="relative flex min-h-screen flex-col">{children}</div>
+          </NotificationProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )

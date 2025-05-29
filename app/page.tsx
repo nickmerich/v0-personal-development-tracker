@@ -1,376 +1,337 @@
 "use client"
 
-import { CardFooter } from "@/components/ui/card"
-import {
-  CircleDashed,
-  CheckCircle2,
-  ChevronRight,
-  ChevronLeft,
-  Target,
-  Brain,
-  Briefcase,
-  Users,
-  Sparkles,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { Target, Sparkles, ArrowRight, TrendingUp, Star, Play, Mountain, Zap, Brain, Quote } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { MobileLayout, MobileCard, MobileButton } from "@/components/mobile-layout"
+import Image from "next/image"
 
-export default function Dashboard() {
+export default function Homepage() {
   const router = useRouter()
   const [isUserSetup, setIsUserSetup] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    const userData = localStorage.getItem("userData")
-    if (userData) {
-      setIsUserSetup(true)
+    // Check if user is already set up
+    try {
+      const userData = localStorage.getItem("userData")
+      if (userData) {
+        const parsedData = JSON.parse(userData)
+        if (parsedData.setupCompleted) {
+          setIsUserSetup(true)
+          // Redirect to dashboard if already set up
+          router.push("/dashboard")
+          return
+        }
+      }
+    } catch (error) {
+      console.error("Error checking user setup:", error)
     }
-  }, [])
+
+    setIsLoaded(true)
+  }, [router])
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-forest-50 to-stone-50 flex items-center justify-center">
+        <div className="animate-pulse">
+          <Mountain className="h-12 w-12 text-forest-600" />
+        </div>
+      </div>
+    )
+  }
+
+  if (isUserSetup) {
+    return null // Will redirect to dashboard
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-forest-50 to-stone-50 text-black">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-forest-600 to-forest-700 p-6 shadow-lg">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Welcome back, Alex</h1>
-              <p className="text-forest-100">Day 15 of your 90-day transformation challenge</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                className="bg-white text-forest-600 border-white hover:bg-forest-50 hover:text-forest-700"
-                onClick={() => router.push("/templates")}
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                Browse Templates
-              </Button>
-              <Button
-                variant="outline"
-                className="bg-white text-forest-600 border-white hover:bg-forest-50 hover:text-forest-700"
-              >
-                Settings
-              </Button>
-              <Button className="bg-white text-forest-600 hover:bg-forest-50">Journal Today</Button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-forest-50 via-white to-stone-50 overflow-hidden">
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center justify-center px-4 py-12">
+        {/* Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-forest-200/30 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-stone-200/40 rounded-full blur-3xl animate-pulse delay-1000" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-forest-100/20 to-stone-100/20 rounded-full blur-3xl" />
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-6">
-        {isUserSetup ? (
-          <>
-            {/* Overall Progress */}
-            <Card className="mb-8 border-forest-200 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>Overall Progress</CardTitle>
-                <CardDescription>Your journey toward your goals</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">16% Complete</span>
-                    <span className="text-sm text-stone-600">15/90 days</span>
-                  </div>
-                  <Progress value={16} className="h-2 bg-stone-100" indicatorClassName="bg-forest-500" />
-                </div>
-                <div className="mt-4 p-4 bg-forest-50 rounded-lg border border-forest-200">
-                  <h3 className="font-semibold mb-2 text-forest-800">Your Main Goal</h3>
-                  <p className="text-forest-700">Launch my online business and acquire first 10 paying customers</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card className="mb-8 border-forest-200 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-forest-600" />
-                  Quick Start with Templates
-                </CardTitle>
-                <CardDescription>Jump-start your progress with proven habit templates</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <Button
-                    variant="outline"
-                    className="h-auto p-4 border-forest-200 hover:bg-forest-50 flex flex-col items-start"
-                    onClick={() => router.push("/templates")}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Target className="h-5 w-5 text-forest-600" />
-                      <span className="font-medium">Morning Routine</span>
-                    </div>
-                    <span className="text-sm text-stone-600 text-left">Start your day with purpose and energy</span>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="h-auto p-4 border-forest-200 hover:bg-forest-50 flex flex-col items-start"
-                    onClick={() => router.push("/templates")}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Brain className="h-5 w-5 text-forest-600" />
-                      <span className="font-medium">Mindfulness</span>
-                    </div>
-                    <span className="text-sm text-stone-600 text-left">Build mental clarity and reduce stress</span>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="h-auto p-4 border-forest-200 hover:bg-forest-50 flex flex-col items-start"
-                    onClick={() => router.push("/templates")}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Briefcase className="h-5 w-5 text-forest-600" />
-                      <span className="font-medium">Productivity</span>
-                    </div>
-                    <span className="text-sm text-stone-600 text-left">Maximize focus and accomplish more</span>
-                  </Button>
-                </div>
-
-                <div className="mt-4 text-center">
-                  <Button
-                    onClick={() => router.push("/templates")}
-                    className="bg-forest-600 text-white hover:bg-forest-700"
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Browse All Templates
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Categories */}
-            <h2 className="text-xl font-bold mb-4 text-forest-800">Life Categories</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {categories.map((category) => (
-                <Card
-                  key={category.name}
-                  className="border-forest-200 bg-white/80 backdrop-blur-sm hover:shadow-lg transition-shadow"
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 rounded-full bg-forest-100">
-                          <category.icon className="h-5 w-5 text-forest-600" />
-                        </div>
-                        <CardTitle className="text-lg text-forest-800">{category.name}</CardTitle>
-                      </div>
-                      <span className="text-sm font-medium text-forest-600">{category.progress}%</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pb-2">
-                    <Progress
-                      value={category.progress}
-                      className="h-2 bg-stone-100"
-                      indicatorClassName="bg-forest-500"
-                    />
-                    <ul className="mt-4 space-y-2">
-                      {category.tasks.map((task, i) => (
-                        <li key={i} className="flex items-center gap-2">
-                          {task.completed ? (
-                            <CheckCircle2 className="h-5 w-5 text-forest-500" />
-                          ) : (
-                            <CircleDashed className="h-5 w-5 text-stone-400" />
-                          )}
-                          <span className={task.completed ? "line-through text-stone-500" : "text-stone-700"}>
-                            {task.name}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <Button variant="ghost" className="w-full text-forest-600 hover:bg-forest-50">
-                      View All Tasks
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
+        <MobileLayout maxWidth="xl" className="relative z-10">
+          <div className="text-center space-y-8 animate-in">
+            {/* Badge */}
+            <div className="flex justify-center">
+              <Badge className="bg-forest-100 text-forest-800 border-forest-200 px-4 py-2 text-sm font-medium">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Transform Your Life in 90 Days
+              </Badge>
             </div>
 
-            {/* Milestones */}
-            <h2 className="text-xl font-bold mb-4 text-forest-800">Milestones</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">{/* Milestones content here */}</div>
+            {/* Main Headline */}
+            <div className="space-y-4">
+              <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-forest-900 leading-tight">
+                Your Journey to
+                <span className="block bg-gradient-to-r from-forest-600 to-forest-800 bg-clip-text text-transparent">
+                  Greatness
+                </span>
+                Starts Today
+              </h1>
 
-            {/* Daily Affirmations */}
-            <h2 className="text-xl font-bold mb-4 text-forest-800">Daily Affirmations</h2>
-            <Card className="border-forest-200 bg-white/80 backdrop-blur-sm mb-8">
-              <CardContent className="pt-6">
-                <div className="relative">
-                  <div className="flex justify-center items-center p-8 bg-gradient-to-r from-forest-50 to-stone-50 rounded-lg border border-forest-100">
-                    <p className="text-center text-lg font-medium italic text-forest-800">
-                      "I am committed to consistent daily progress. Each small step brings me closer to my summit."
-                    </p>
-                  </div>
-                  <div className="flex justify-center mt-4 gap-2">
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="rounded-full h-8 w-8 p-0 text-forest-600 border-forest-300 hover:bg-forest-50"
+              <p className="text-lg sm:text-xl text-stone-600 max-w-2xl mx-auto leading-relaxed">
+                Build lasting habits, track meaningful progress, and unlock the greatness within you.
+              </p>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+              <MobileButton
+                size="lg"
+                onClick={() => router.push("/setup/personal-info")}
+                className="bg-gradient-to-r from-forest-600 to-forest-700 hover:from-forest-700 hover:to-forest-800 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 w-64 sm:w-72"
+              >
+                <Mountain className="w-5 h-5 mr-2" />
+                Start Your Transformation
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </MobileButton>
+
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-2 border-forest-300 text-forest-700 hover:bg-forest-50 min-h-[56px] w-64 sm:w-72"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Watch Demo
+              </Button>
+            </div>
+
+            {/* Social Proof */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8 text-sm text-stone-600">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="w-8 h-8 rounded-full bg-gradient-to-br from-forest-400 to-forest-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold"
                     >
-                      <ChevronLeft className="h-4 w-4" />
-                      <span className="sr-only">Previous</span>
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="rounded-full h-8 w-8 p-0 text-forest-600 border-forest-300 hover:bg-forest-50"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                      <span className="sr-only">Next</span>
-                    </Button>
-                  </div>
+                      {String.fromCharCode(64 + i)}
+                    </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
+                <span>Join 10,000+ people transforming their lives</span>
+              </div>
 
-            {/* Analytics */}
-            <h2 className="text-xl font-bold mb-4 text-forest-800">Weekly Analytics</h2>
-            <Tabs defaultValue="progress" className="mb-8">
-              <TabsList className="bg-forest-100">
-                <TabsTrigger
-                  value="progress"
-                  className="data-[state=active]:bg-forest-600 data-[state=active]:text-white"
-                >
-                  Progress
-                </TabsTrigger>
-                <TabsTrigger
-                  value="habits"
-                  className="data-[state=active]:bg-forest-600 data-[state=active]:text-white"
-                >
-                  Habits
-                </TabsTrigger>
-                <TabsTrigger
-                  value="insights"
-                  className="data-[state=active]:bg-forest-600 data-[state=active]:text-white"
-                >
-                  Insights
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="progress" className="p-4 border rounded-md mt-2 border-forest-200 bg-white/80">
-                <div className="h-64 flex items-center justify-center bg-forest-50 rounded-md">
-                  <p className="text-stone-600">Weekly progress chart will appear here</p>
-                </div>
-              </TabsContent>
-              <TabsContent value="habits" className="p-4 border rounded-md mt-2 border-forest-200 bg-white/80">
-                <div className="h-64 flex items-center justify-center bg-forest-50 rounded-md">
-                  <p className="text-stone-600">Habit tracking data will appear here</p>
-                </div>
-              </TabsContent>
-              <TabsContent value="insights" className="p-4 border rounded-md mt-2 border-forest-200 bg-white/80">
-                <div className="h-64 flex items-center justify-center bg-forest-50 rounded-md">
-                  <p className="text-stone-600">Insights and recommendations will appear here</p>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </>
-        ) : (
-          <div className="flex min-h-screen flex-col items-center justify-center p-4">
-            <Card className="w-full max-w-md border-forest-200 bg-white/90 backdrop-blur-sm shadow-xl">
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-forest-100">
-                  <Target className="h-8 w-8 text-forest-600" />
-                </div>
-                <CardTitle className="text-3xl font-bold text-forest-800">Personal Growth Tracker</CardTitle>
-                <CardDescription className="text-stone-600">
-                  Transform your life with purpose-driven daily actions
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center space-y-4">
-                <p className="text-center text-stone-700">
-                  Connect with your deeper purpose, schedule meaningful actions, and track your transformation journey.
-                </p>
-
-                <Button
-                  className="w-full bg-forest-600 text-white hover:bg-forest-700"
-                  onClick={() => router.push("/setup/personal-info")}
-                >
-                  Start Your Transformation
-                  <Sparkles className="ml-2 h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                ))}
+                <span className="ml-1">4.9/5 from 2,000+ reviews</span>
+              </div>
+            </div>
           </div>
-        )}
-      </main>
+        </MobileLayout>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-white/50 backdrop-blur-sm">
+        <MobileLayout>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-forest-900 mb-4">Everything You Need to Succeed</h2>
+            <p className="text-lg text-stone-600 max-w-2xl mx-auto">
+              Powerful tools designed to make personal transformation simple, engaging, and sustainable.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <MobileCard
+                key={feature.title}
+                interactive
+                className="text-center group hover:shadow-xl transition-all duration-300 hover:-translate-y-2"
+              >
+                <div className="space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-forest-100 to-forest-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <feature.icon className="w-8 h-8 text-forest-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-forest-900">{feature.title}</h3>
+                  <p className="text-stone-600 leading-relaxed">{feature.description}</p>
+                </div>
+              </MobileCard>
+            ))}
+          </div>
+        </MobileLayout>
+      </section>
+
+      {/* Testimonial Section */}
+      <section className="py-20 bg-forest-50">
+        <MobileLayout>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-forest-900 mb-4">What Our Users Say</h2>
+            <p className="text-lg text-stone-600 max-w-2xl mx-auto">
+              Join thousands who have transformed their lives with our platform
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <MobileCard className="overflow-hidden border-forest-200">
+              <div className="flex flex-col md:flex-row gap-6 p-2 md:p-6">
+                <div className="md:w-1/3 flex flex-col items-center text-center">
+                  <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-forest-100 mb-4">
+                    <Image
+                      src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/testimonial-1732703063632.jpg-rlNPgokwCGh09x3yYjXqip6KzFBt1l.jpeg"
+                      alt="Garrett Hughes"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <h3 className="text-xl font-bold text-forest-900">Garrett Hughes</h3>
+                  <p className="text-sm text-stone-600 mt-1">
+                    Co-founder @ Mint Songs (acquired Napster) / Engineering Leader @ Dune Analytics
+                  </p>
+                </div>
+
+                <div className="md:w-2/3 flex items-center">
+                  <div className="relative">
+                    <Quote className="absolute -top-4 -left-4 w-8 h-8 text-forest-200 rotate-180" />
+                    <blockquote className="text-lg md:text-xl text-forest-800 italic leading-relaxed pl-6">
+                      "Nick's leadership in our team was inspiring and encouraged us to achieve our best potential. He
+                      was responsible for community development, where he demonstrated an innate ability to build,
+                      nurture and grow communities that still thrive today."
+                    </blockquote>
+                    <Quote className="absolute -bottom-4 -right-4 w-8 h-8 text-forest-200" />
+                  </div>
+                </div>
+              </div>
+            </MobileCard>
+          </div>
+        </MobileLayout>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-20 bg-gradient-to-r from-forest-600 to-forest-700">
+        <MobileLayout>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
+            {stats.map((stat, index) => (
+              <div key={stat.label} className="space-y-2">
+                <div className="text-3xl sm:text-4xl font-bold">{stat.value}</div>
+                <div className="text-forest-100 text-sm sm:text-base">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </MobileLayout>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-20 bg-gradient-to-br from-stone-50 to-forest-50">
+        <MobileLayout>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-forest-900 mb-4">Your Path to Transformation</h2>
+            <p className="text-lg text-stone-600">Simple steps, powerful results</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {steps.map((step, index) => (
+              <div key={step.title} className="relative">
+                {/* Connection Line */}
+                {index < steps.length - 1 && (
+                  <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-forest-300 to-transparent z-0" />
+                )}
+
+                <MobileCard className="relative z-10 text-center">
+                  <div className="space-y-4">
+                    <div className="mx-auto w-16 h-16 bg-gradient-to-br from-forest-600 to-forest-700 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                      {index + 1}
+                    </div>
+                    <h3 className="text-xl font-semibold text-forest-900">{step.title}</h3>
+                    <p className="text-stone-600">{step.description}</p>
+                  </div>
+                </MobileCard>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <MobileButton
+              size="lg"
+              onClick={() => router.push("/setup/personal-info")}
+              className="bg-gradient-to-r from-forest-600 to-forest-700 hover:from-forest-700 hover:to-forest-800"
+            >
+              <Zap className="w-5 h-5 mr-2" />
+              Begin Your Journey Now
+            </MobileButton>
+          </div>
+        </MobileLayout>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 bg-gradient-to-br from-forest-900 to-forest-800 text-white">
+        <MobileLayout className="text-center">
+          <div className="space-y-8">
+            <h2 className="text-3xl sm:text-5xl font-bold leading-tight">
+              Ready to Transform
+              <span className="block text-forest-200">Your Life?</span>
+            </h2>
+
+            <p className="text-xl text-forest-100 max-w-2xl mx-auto">
+              Join thousands who've already started their journey to becoming extraordinary.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+              <MobileButton
+                size="lg"
+                onClick={() => router.push("/setup/personal-info")}
+                className="bg-white text-forest-900 hover:bg-forest-50 w-64 sm:w-72"
+              >
+                <Mountain className="w-5 h-5 mr-2" />
+                Start Free Today
+              </MobileButton>
+
+              <p className="text-sm text-forest-200">No credit card required • 90-day transformation guarantee</p>
+            </div>
+          </div>
+        </MobileLayout>
+      </section>
     </div>
   )
 }
 
-// Sample data
-const categories = [
+// Data
+const features = [
   {
-    name: "Physical Health",
     icon: Target,
-    progress: 60,
-    tasks: [
-      { name: "Morning workout", completed: true },
-      { name: "Healthy breakfast", completed: true },
-      { name: "Evening walk", completed: false },
-    ],
+    title: "Goal Tracking",
+    description: "Set meaningful goals and track your progress with visual milestones that keep you motivated.",
   },
   {
-    name: "Mental Wellness",
     icon: Brain,
-    progress: 40,
-    tasks: [
-      { name: "Meditation", completed: true },
-      { name: "Gratitude journal", completed: false },
-      { name: "Reading", completed: false },
-    ],
+    title: "Habit Building",
+    description: "Build lasting habits with proven templates and personalized recommendations.",
   },
   {
-    name: "Career Growth",
-    icon: Briefcase,
-    progress: 75,
-    tasks: [
-      { name: "Skill practice", completed: true },
-      { name: "Network building", completed: true },
-      { name: "Project work", completed: true },
-    ],
-  },
-  {
-    name: "Relationships",
-    icon: Users,
-    progress: 50,
-    tasks: [
-      { name: "Call family", completed: true },
-      { name: "Quality time with friends", completed: false },
-      { name: "Express appreciation", completed: true },
-    ],
+    icon: TrendingUp,
+    title: "Progress Analytics",
+    description: "Understand your patterns with detailed insights and celebrate your growth journey.",
   },
 ]
 
-const milestones = [
+const stats = [
+  { value: "10K+", label: "Active Users" },
+  { value: "90%", label: "Success Rate" },
+  { value: "2M+", label: "Goals Achieved" },
+  { value: "4.9★", label: "User Rating" },
+]
+
+const steps = [
   {
-    name: "Savings Goal",
-    description: "Building emergency fund",
-    current: 2500,
-    target: 10000,
+    title: "Define Your Vision",
+    description: "Set your big goal and connect with your deeper purpose for lasting motivation.",
   },
   {
-    name: "Fitness Goal",
-    description: "Weight training progress",
-    current: 3,
-    target: 5,
+    title: "Build Your Plan",
+    description: "Choose from proven templates or create custom habits that align with your goals.",
   },
   {
-    name: "Business Goal",
-    description: "Acquiring first customers",
-    current: 2,
-    target: 10,
-  },
-  {
-    name: "Learning Goal",
-    description: "Complete online course",
-    current: 4,
-    target: 12,
+    title: "Track & Transform",
+    description: "Monitor your progress, celebrate wins, and adjust your path to success.",
   },
 ]

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Settings, LogOut, Calendar, BookOpen, Sparkles } from "lucide-react"
 import { EnhancedJournalModal } from "@/components/enhanced-journal-modal"
+import { cn } from "@/lib/utils"
 
 interface DashboardHeaderProps {
   name: string
@@ -38,18 +39,21 @@ export function DashboardHeader({ name, startDate }: DashboardHeaderProps) {
   return (
     <>
       <header className="bg-gradient-to-r from-forest-600 to-forest-700 text-white shadow-lg">
-        <div className="container mx-auto p-4">
-          <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between md:space-y-0">
-            <div>
-              <h1 className="text-2xl font-bold">Day {dayNumber} of 90</h1>
-              <p className="text-forest-100">Welcome back, {name}!</p>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 max-w-7xl">
+          <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+            <div className="space-y-1">
+              <h1 className="text-2xl lg:text-3xl font-bold">Day {dayNumber} of 90</h1>
+              <p className="text-forest-100 text-base lg:text-lg">Welcome back, {name}!</p>
             </div>
 
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="secondary"
-                size="sm"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/20 min-h-[40px] min-w-[100px] transition-all duration-200 hover:scale-105"
+                size="default"
+                className={cn(
+                  "bg-white/20 hover:bg-white/30 text-white border-white/20",
+                  "transition-all duration-200 hover:scale-105 min-w-[120px]",
+                )}
                 onClick={() => setShowJournal(true)}
               >
                 <BookOpen className="mr-2 h-4 w-4" />
@@ -57,7 +61,7 @@ export function DashboardHeader({ name, startDate }: DashboardHeaderProps) {
               </Button>
               <Button
                 variant="secondary"
-                size="sm"
+                size="default"
                 className="bg-white/20 hover:bg-white/30 text-white border-white/20"
                 onClick={() => router.push("/templates")}
               >
@@ -66,7 +70,7 @@ export function DashboardHeader({ name, startDate }: DashboardHeaderProps) {
               </Button>
               <Button
                 variant="secondary"
-                size="sm"
+                size="default"
                 className="bg-white/20 hover:bg-white/30 text-white border-white/20"
                 onClick={() => router.push("/calendar")}
               >
@@ -75,7 +79,7 @@ export function DashboardHeader({ name, startDate }: DashboardHeaderProps) {
               </Button>
               <Button
                 variant="secondary"
-                size="sm"
+                size="default"
                 className="bg-white/20 hover:bg-white/30 text-white border-white/20"
                 onClick={() => router.push("/settings")}
               >
@@ -84,7 +88,7 @@ export function DashboardHeader({ name, startDate }: DashboardHeaderProps) {
               </Button>
               <Button
                 variant="secondary"
-                size="sm"
+                size="default"
                 className="bg-white/20 hover:bg-white/30 text-white border-white/20"
                 onClick={handleLogout}
               >

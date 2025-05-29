@@ -6,15 +6,18 @@ interface SetupProgressProps {
 }
 
 export function SetupProgress({ currentStep, totalSteps }: SetupProgressProps) {
-  const progressPercentage = (currentStep / totalSteps) * 100
+  // Validate inputs
+  const validCurrentStep = Math.max(1, Math.min(currentStep, totalSteps))
+  const validTotalSteps = Math.max(1, totalSteps)
+  const progressPercentage = Math.round((validCurrentStep / validTotalSteps) * 100)
 
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-sm">
         <span className="text-forest-800">
-          Preparation Step {currentStep} of {totalSteps}
+          Preparation Step {validCurrentStep} of {validTotalSteps}
         </span>
-        <span className="text-forest-600">{Math.round(progressPercentage)}% Ready</span>
+        <span className="text-forest-600">{progressPercentage}% Ready</span>
       </div>
       <Progress
         value={progressPercentage}
