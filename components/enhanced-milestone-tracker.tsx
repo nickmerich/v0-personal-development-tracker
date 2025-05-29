@@ -432,7 +432,7 @@ export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMiles
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-forest-800">{milestone.title}</CardTitle>
+                        <CardTitle className="text-forest-800 mb-3">{milestone.title}</CardTitle>
                         <CardDescription className="text-stone-600">{milestone.description}</CardDescription>
                       </div>
                       <div className="text-right">
@@ -538,7 +538,7 @@ export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMiles
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-forest-800 flex items-center gap-2">
+                      <CardTitle className="text-forest-800 flex items-center gap-2 mb-3">
                         <CheckCircle2 className="h-5 w-5 text-forest-600" />
                         {milestone.title}
                         <Sparkles className="h-4 w-4 text-earth-600 animate-pulse" />
