@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    --font-display: var(--font-montserrat);
+    --font-body: var(--font-inter);
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -25,41 +27,17 @@
     --ring: 222.2 84% 4.9%;
     --radius: 0.75rem;
 
-    /* Custom Forest Theme Colors */
-    --forest-50: 138 20% 97%;
-    --forest-100: 138 15% 92%;
-    --forest-200: 138 12% 84%;
-    --forest-300: 138 10% 71%;
-    --forest-400: 138 8% 58%;
-    --forest-500: 138 25% 45%;
-    --forest-600: 138 35% 35%;
-    --forest-700: 138 40% 25%;
-    --forest-800: 138 45% 15%;
-    --forest-900: 138 50% 8%;
-
-    /* Earth Tones */
-    --earth-50: 25 20% 97%;
-    --earth-100: 25 15% 92%;
-    --earth-200: 25 12% 84%;
-    --earth-300: 25 10% 71%;
-    --earth-400: 25 8% 58%;
-    --earth-500: 25 25% 45%;
-    --earth-600: 25 35% 35%;
-    --earth-700: 25 40% 25%;
-    --earth-800: 25 45% 15%;
-    --earth-900: 25 50% 8%;
-
-    /* Stone Colors */
-    --stone-50: 210 20% 98%;
-    --stone-100: 210 15% 95%;
-    --stone-200: 210 12% 88%;
-    --stone-300: 210 10% 78%;
-    --stone-400: 210 8% 65%;
-    --stone-500: 210 6% 52%;
-    --stone-600: 210 8% 42%;
-    --stone-700: 210 10% 32%;
-    --stone-800: 210 12% 22%;
-    --stone-900: 210 15% 12%;
+    /* Brand Colors - Emerald/Teal Theme */
+    --brand-50: 151 81% 96%;
+    --brand-100: 149 80% 90%;
+    --brand-200: 152 76% 80%;
+    --brand-300: 156 72% 67%;
+    --brand-400: 158 64% 52%;
+    --brand-500: 160 84% 39%;
+    --brand-600: 161 94% 30%;
+    --brand-700: 163 94% 24%;
+    --brand-800: 163 88% 20%;
+    --brand-900: 164 86% 16%;
   }
 
   .dark {
@@ -92,7 +70,36 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-body);
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+
+  /* Brand-consistent button styles */
+  .btn-brand {
+    @apply bg-white text-gray-900 hover:bg-gray-50 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  .btn-brand-primary {
+    @apply bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  /* Brand glassmorphism cards */
+  .card-glass {
+    @apply bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl;
+  }
+
+  /* Brand gradient backgrounds */
+  .bg-brand-gradient {
+    @apply bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600;
+  }
+
+  .bg-brand-light {
+    @apply bg-gradient-to-br from-emerald-50 to-teal-50;
   }
 
   /* Smooth scrolling */
@@ -102,7 +109,7 @@
 
   /* Focus styles */
   *:focus-visible {
-    @apply outline-none ring-2 ring-forest-500 ring-offset-2;
+    @apply outline-none ring-2 ring-emerald-500 ring-offset-2;
   }
 
   /* Custom scrollbar */
@@ -112,20 +119,20 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-stone-100;
+    @apply bg-gray-100;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-stone-300 rounded-full;
+    @apply bg-emerald-300 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-stone-400;
+    @apply bg-emerald-400;
   }
 
   /* Selection styles */
   ::selection {
-    @apply bg-forest-200 text-forest-900;
+    @apply bg-emerald-200 text-emerald-900;
   }
 
   /* Typography improvements */
@@ -138,7 +145,57 @@
     @apply font-semibold tracking-tight;
   }
 
-  /* Responsive text sizes */
+  /* Animation utilities */
+  @keyframes countUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-in {
+    animation: countUp 0.8s ease-out forwards;
+  }
+
+  @keyframes gentle-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-gentle-pulse {
+    animation: gentle-pulse 2s infinite;
+  }
+
+  /* Touch target improvements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Container improvements */
+  .container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Card improvements */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-md hover:scale-[1.02];
+  }
+
+  /* Responsive utilities */
   .text-responsive-xs {
     @apply text-xs sm:text-sm;
   }
@@ -161,7 +218,6 @@
     @apply text-3xl sm:text-4xl;
   }
 
-  /* Responsive spacing */
   .space-responsive {
     @apply space-y-4 sm:space-y-6;
   }
@@ -176,355 +232,5 @@
   }
   .py-responsive {
     @apply py-4 sm:py-6;
-  }
-
-  /* Animation utilities */
-  .animate-in {
-    animation: animate-in 0.2s ease-out;
-  }
-
-  @keyframes animate-in {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .animate-scale-in {
-    animation: animate-scale-in 0.2s ease-out;
-  }
-
-  @keyframes animate-scale-in {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  /* Touch target improvements */
-  .touch-target {
-    @apply min-h-[44px] min-w-[44px];
-  }
-
-  /* Container improvements */
-  .container {
-    @apply mx-auto px-4 sm:px-6 lg:px-8;
-  }
-
-  /* Card improvements */
-  .card-hover {
-    @apply transition-all duration-200 hover:shadow-md hover:scale-[1.02];
-  }
-
-  /* Button improvements */
-  .btn-responsive {
-    @apply h-10 px-4 text-sm sm:h-12 sm:px-6 sm:text-base;
-  }
-
-  /* Grid responsive utilities */
-  .grid-responsive-1 {
-    @apply grid-cols-1;
-  }
-  .grid-responsive-2 {
-    @apply grid-cols-1 sm:grid-cols-2;
-  }
-  .grid-responsive-3 {
-    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3;
-  }
-  .grid-responsive-4 {
-    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
-  }
-  .grid-responsive-6 {
-    @apply grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6;
-  }
-}
-
-/* Forest theme color classes */
-@layer utilities {
-  .text-forest-50 {
-    color: hsl(var(--forest-50));
-  }
-  .text-forest-100 {
-    color: hsl(var(--forest-100));
-  }
-  .text-forest-200 {
-    color: hsl(var(--forest-200));
-  }
-  .text-forest-300 {
-    color: hsl(var(--forest-300));
-  }
-  .text-forest-400 {
-    color: hsl(var(--forest-400));
-  }
-  .text-forest-500 {
-    color: hsl(var(--forest-500));
-  }
-  .text-forest-600 {
-    color: hsl(var(--forest-600));
-  }
-  .text-forest-700 {
-    color: hsl(var(--forest-700));
-  }
-  .text-forest-800 {
-    color: hsl(var(--forest-800));
-  }
-  .text-forest-900 {
-    color: hsl(var(--forest-900));
-  }
-
-  .bg-forest-50 {
-    background-color: hsl(var(--forest-50));
-  }
-  .bg-forest-100 {
-    background-color: hsl(var(--forest-100));
-  }
-  .bg-forest-200 {
-    background-color: hsl(var(--forest-200));
-  }
-  .bg-forest-300 {
-    background-color: hsl(var(--forest-300));
-  }
-  .bg-forest-400 {
-    background-color: hsl(var(--forest-400));
-  }
-  .bg-forest-500 {
-    background-color: hsl(var(--forest-500));
-  }
-  .bg-forest-600 {
-    background-color: hsl(var(--forest-600));
-  }
-  .bg-forest-700 {
-    background-color: hsl(var(--forest-700));
-  }
-  .bg-forest-800 {
-    background-color: hsl(var(--forest-800));
-  }
-  .bg-forest-900 {
-    background-color: hsl(var(--forest-900));
-  }
-
-  .border-forest-50 {
-    border-color: hsl(var(--forest-50));
-  }
-  .border-forest-100 {
-    border-color: hsl(var(--forest-100));
-  }
-  .border-forest-200 {
-    border-color: hsl(var(--forest-200));
-  }
-  .border-forest-300 {
-    border-color: hsl(var(--forest-300));
-  }
-  .border-forest-400 {
-    border-color: hsl(var(--forest-400));
-  }
-  .border-forest-500 {
-    border-color: hsl(var(--forest-500));
-  }
-  .border-forest-600 {
-    border-color: hsl(var(--forest-600));
-  }
-  .border-forest-700 {
-    border-color: hsl(var(--forest-700));
-  }
-  .border-forest-800 {
-    border-color: hsl(var(--forest-800));
-  }
-  .border-forest-900 {
-    border-color: hsl(var(--forest-900));
-  }
-
-  .text-earth-50 {
-    color: hsl(var(--earth-50));
-  }
-  .text-earth-100 {
-    color: hsl(var(--earth-100));
-  }
-  .text-earth-200 {
-    color: hsl(var(--earth-200));
-  }
-  .text-earth-300 {
-    color: hsl(var(--earth-300));
-  }
-  .text-earth-400 {
-    color: hsl(var(--earth-400));
-  }
-  .text-earth-500 {
-    color: hsl(var(--earth-500));
-  }
-  .text-earth-600 {
-    color: hsl(var(--earth-600));
-  }
-  .text-earth-700 {
-    color: hsl(var(--earth-700));
-  }
-  .text-earth-800 {
-    color: hsl(var(--earth-800));
-  }
-  .text-earth-900 {
-    color: hsl(var(--earth-900));
-  }
-
-  .bg-earth-50 {
-    background-color: hsl(var(--earth-50));
-  }
-  .bg-earth-100 {
-    background-color: hsl(var(--earth-100));
-  }
-  .bg-earth-200 {
-    background-color: hsl(var(--earth-200));
-  }
-  .bg-earth-300 {
-    background-color: hsl(var(--earth-300));
-  }
-  .bg-earth-400 {
-    background-color: hsl(var(--earth-400));
-  }
-  .bg-earth-500 {
-    background-color: hsl(var(--earth-500));
-  }
-  .bg-earth-600 {
-    background-color: hsl(var(--earth-600));
-  }
-  .bg-earth-700 {
-    background-color: hsl(var(--earth-700));
-  }
-  .bg-earth-800 {
-    background-color: hsl(var(--earth-800));
-  }
-  .bg-earth-900 {
-    background-color: hsl(var(--earth-900));
-  }
-
-  .border-earth-50 {
-    border-color: hsl(var(--earth-50));
-  }
-  .border-earth-100 {
-    border-color: hsl(var(--earth-100));
-  }
-  .border-earth-200 {
-    border-color: hsl(var(--earth-200));
-  }
-  .border-earth-300 {
-    border-color: hsl(var(--earth-300));
-  }
-  .border-earth-400 {
-    border-color: hsl(var(--earth-400));
-  }
-  .border-earth-500 {
-    border-color: hsl(var(--earth-500));
-  }
-  .border-earth-600 {
-    border-color: hsl(var(--earth-600));
-  }
-  .border-earth-700 {
-    border-color: hsl(var(--earth-700));
-  }
-  .border-earth-800 {
-    border-color: hsl(var(--earth-800));
-  }
-  .border-earth-900 {
-    border-color: hsl(var(--earth-900));
-  }
-
-  .text-stone-50 {
-    color: hsl(var(--stone-50));
-  }
-  .text-stone-100 {
-    color: hsl(var(--stone-100));
-  }
-  .text-stone-200 {
-    color: hsl(var(--stone-200));
-  }
-  .text-stone-300 {
-    color: hsl(var(--stone-300));
-  }
-  .text-stone-400 {
-    color: hsl(var(--stone-400));
-  }
-  .text-stone-500 {
-    color: hsl(var(--stone-500));
-  }
-  .text-stone-600 {
-    color: hsl(var(--stone-600));
-  }
-  .text-stone-700 {
-    color: hsl(var(--stone-700));
-  }
-  .text-stone-800 {
-    color: hsl(var(--stone-800));
-  }
-  .text-stone-900 {
-    color: hsl(var(--stone-900));
-  }
-
-  .bg-stone-50 {
-    background-color: hsl(var(--stone-50));
-  }
-  .bg-stone-100 {
-    background-color: hsl(var(--stone-100));
-  }
-  .bg-stone-200 {
-    background-color: hsl(var(--stone-200));
-  }
-  .bg-stone-300 {
-    background-color: hsl(var(--stone-300));
-  }
-  .bg-stone-400 {
-    background-color: hsl(var(--stone-400));
-  }
-  .bg-stone-500 {
-    background-color: hsl(var(--stone-500));
-  }
-  .bg-stone-600 {
-    background-color: hsl(var(--stone-600));
-  }
-  .bg-stone-700 {
-    background-color: hsl(var(--stone-700));
-  }
-  .bg-stone-800 {
-    background-color: hsl(var(--stone-800));
-  }
-  .bg-stone-900 {
-    background-color: hsl(var(--stone-900));
-  }
-
-  .border-stone-50 {
-    border-color: hsl(var(--stone-50));
-  }
-  .border-stone-100 {
-    border-color: hsl(var(--stone-100));
-  }
-  .border-stone-200 {
-    border-color: hsl(var(--stone-200));
-  }
-  .border-stone-300 {
-    border-color: hsl(var(--stone-300));
-  }
-  .border-stone-400 {
-    border-color: hsl(var(--stone-400));
-  }
-  .border-stone-500 {
-    border-color: hsl(var(--stone-500));
-  }
-  .border-stone-600 {
-    border-color: hsl(var(--stone-600));
-  }
-  .border-stone-700 {
-    border-color: hsl(var(--stone-700));
-  }
-  .border-stone-800 {
-    border-color: hsl(var(--stone-800));
-  }
-  .border-stone-900 {
-    border-color: hsl(var(--stone-900));
   }
 }
