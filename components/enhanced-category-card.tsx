@@ -1,8 +1,4 @@
-\
-Let's also update the milestone tracker to use mountain terminology:
-
-```typescriptreact file="components/enhanced-milestone-tracker.tsx"
-[v0-no-op-code-block-prefix]"use client"
+"use client"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -606,3 +602,6 @@ export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMiles
     </div>
   )
 }
+
+// Add named export for compatibility
+export { EnhancedMilestoneTracker as EnhancedCategoryCard }
