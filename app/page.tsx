@@ -67,8 +67,9 @@ export default function Homepage() {
               30-60-90 Day Transformation platform to lock in on life and achieve your goals.
             </h2>
 
-            {/* CTA Button */}
-            <div className="pt-6">
+            {/* CTA Buttons */}
+            <div className="pt-6 space-y-4">
+              {/* Primary CTA */}
               <Button
                 onClick={() => router.push("/setup/personal-info")}
                 className="bg-white text-emerald-700 hover:bg-white/90 shadow-lg w-full sm:w-auto px-8 py-3 h-auto font-bold rounded-xl text-lg"
@@ -76,6 +77,17 @@ export default function Homepage() {
                 Start Today
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
+
+              {/* Secondary Sign In Option */}
+              <div className="flex items-center justify-center">
+                <span className="text-white/80 text-sm mr-2">Already have an account?</span>
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className="text-yellow-300 hover:text-yellow-200 font-semibold text-sm underline underline-offset-2 transition-colors duration-200"
+                >
+                  Sign In
+                </button>
+              </div>
             </div>
 
             {/* Social Proof */}
