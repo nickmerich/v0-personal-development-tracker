@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Target, Flag, Calendar, CheckCircle2, Sparkles, TrendingUp, Gift } from "lucide-react"
+import { Plus, Target, Flag, Calendar, CheckCircle2, Sparkles, TrendingUp, Gift } from 'lucide-react'
 import { cn } from "@/lib/utils"
 
 interface Milestone {
@@ -245,20 +245,20 @@ export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMiles
           <DialogHeader>
             <DialogTitle className="text-forest-800 flex items-center gap-2">
               <Flag className="h-5 w-5 text-forest-600" />
-              Create New Goal
+              Plant Your Flag
             </DialogTitle>
             <DialogDescription className="text-stone-600">
-              Set a specific goal to track your progress and celebrate when you achieve it.
+              Set a specific milestone to mark your progress up the mountain and celebrate when you reach it.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="title" className="text-forest-800">
-                Goal Name
+                Flag Name
               </Label>
               <Input
                 id="title"
-                placeholder="e.g., Save $5,000 for emergency fund"
+                placeholder="e.g., Reach $10K revenue milestone"
                 value={newMilestone.title}
                 onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
                 className={cn(
@@ -399,7 +399,7 @@ export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMiles
                 "transition-all duration-200 hover:scale-105 min-h-[44px]",
               )}
             >
-              Create Goal
+              Plant Flag
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -582,9 +582,9 @@ export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMiles
         <Card className="border-forest-200 bg-white/80 backdrop-blur-sm">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Flag className="h-12 w-12 text-forest-600 mb-4" />
-            <h3 className="text-lg font-semibold text-forest-800 mb-2">No Goals Set</h3>
+            <h3 className="text-lg font-semibold text-forest-800 mb-2">No Flags Planted</h3>
             <p className="text-stone-600 text-center mb-4">
-              Create your first goal to start tracking your progress and celebrating your achievements.
+              Plant your first flag to mark important milestones on your climb to the summit.
             </p>
             <Button
               onClick={() => setIsAddingMilestone(true)}
@@ -594,7 +594,7 @@ export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMiles
               )}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Create Your First Goal
+              Plant Your First Flag
             </Button>
           </CardContent>
         </Card>

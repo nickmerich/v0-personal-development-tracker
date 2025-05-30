@@ -3,16 +3,20 @@
 import React from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, RefreshCw } from "lucide-react"
+import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface ErrorBoundaryState {
   hasError: boolean
   error?: Error
+  errorInfo?: React.ErrorInfo
+  errorId?: string
 }
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
   fallback?: React.ComponentType<{ error?: Error; resetError: () => void }>
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void
 }
 
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -22,15 +26,63 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error }
+    const errorId = `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    return {
+      hasError: true,
+      error,
+      errorId,
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("Error caught by boundary:", error, errorInfo)
+
+    this.setState({ errorInfo })
+
+    // Call custom error handler if provided
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo)
+    }
+
+    // Log to error tracking service (replace with your service)
+    this.logErrorToService(error, errorInfo)
+  }
+
+  private logErrorToService = (error: Error, errorInfo: React.ErrorInfo) => {
+    try {
+      // In production, replace with actual error tracking service
+      const errorData = {
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        url: window.location.href,
+        errorId: this.state.errorId,
+      }
+
+      // Store locally for now (in production, send to service)
+      const existingErrors = JSON.parse(localStorage.getItem("errorLogs") || "[]")
+      existingErrors.push(errorData)
+
+      // Keep only last 10 errors
+      if (existingErrors.length > 10) {
+        existingErrors.splice(0, existingErrors.length - 10)
+      }
+
+      localStorage.setItem("errorLogs", JSON.stringify(existingErrors))
+    } catch (logError) {
+      console.error("Failed to log error:", logError)
+    }
   }
 
   resetError = () => {
-    this.setState({ hasError: false, error: undefined })
+    this.setState({
+      hasError: false,
+      error: undefined,
+      errorInfo: undefined,
+      errorId: undefined,
+    })
   }
 
   render() {
@@ -40,17 +92,41 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         return <FallbackComponent error={this.state.error} resetError={this.resetError} />
       }
 
-      return <DefaultErrorFallback error={this.state.error} resetError={this.resetError} />
+      return (
+        <DefaultErrorFallback
+          error={this.state.error}
+          errorInfo={this.state.errorInfo}
+          errorId={this.state.errorId}
+          resetError={this.resetError}
+        />
+      )
     }
 
     return this.props.children
   }
 }
 
-function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError: () => void }) {
+function DefaultErrorFallback({
+  error,
+  errorInfo,
+  errorId,
+  resetError,
+}: {
+  error?: Error
+  errorInfo?: React.ErrorInfo
+  errorId?: string
+  resetError: () => void
+}) {
+  const router = useRouter()
+
   const handleReload = () => {
     resetError()
     window.location.reload()
+  }
+
+  const handleGoHome = () => {
+    resetError()
+    router.push("/")
   }
 
   const handleClearData = () => {
@@ -58,6 +134,24 @@ function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError
       localStorage.clear()
       window.location.href = "/"
     }
+  }
+
+  const handleReportError = () => {
+    const errorReport = {
+      errorId,
+      message: error?.message,
+      stack: error?.stack,
+      componentStack: errorInfo?.componentStack,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+    }
+
+    // Copy error report to clipboard
+    navigator.clipboard
+      .writeText(JSON.stringify(errorReport, null, 2))
+      .then(() => alert("Error report copied to clipboard"))
+      .catch(() => console.error("Failed to copy error report"))
   }
 
   return (
@@ -69,14 +163,26 @@ function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError
           </div>
           <CardTitle className="text-2xl font-bold text-red-800">Something went wrong</CardTitle>
           <CardDescription className="text-red-600">
-            We encountered an unexpected error. Don't worry, your data is likely still safe.
+            We encountered an unexpected error. Your data is safe, and we've been notified.
           </CardDescription>
+          {errorId && <div className="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">Error ID: {errorId}</div>}
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
             <details className="text-sm">
-              <summary className="cursor-pointer text-stone-600 hover:text-stone-800">Technical details</summary>
-              <pre className="mt-2 p-2 bg-stone-100 rounded text-xs overflow-auto">{error.message}</pre>
+              <summary className="cursor-pointer text-stone-600 hover:text-stone-800 font-medium">
+                Technical details
+              </summary>
+              <div className="mt-2 p-3 bg-stone-100 rounded text-xs overflow-auto max-h-32">
+                <div className="font-medium text-red-700 mb-1">Error:</div>
+                <pre className="whitespace-pre-wrap">{error.message}</pre>
+                {error.stack && (
+                  <>
+                    <div className="font-medium text-red-700 mt-2 mb-1">Stack trace:</div>
+                    <pre className="whitespace-pre-wrap text-xs">{error.stack}</pre>
+                  </>
+                )}
+              </div>
             </details>
           )}
 
@@ -86,8 +192,27 @@ function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError
               Try Again
             </Button>
 
+            <Button
+              onClick={handleGoHome}
+              variant="outline"
+              className="w-full border-forest-300 text-forest-600 hover:bg-forest-50"
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Go to Home
+            </Button>
+
             <Button onClick={handleReload} variant="outline" className="w-full">
+              <RefreshCw className="mr-2 h-4 w-4" />
               Reload Page
+            </Button>
+
+            <Button
+              onClick={handleReportError}
+              variant="outline"
+              className="w-full border-blue-300 text-blue-600 hover:bg-blue-50"
+            >
+              <Bug className="mr-2 h-4 w-4" />
+              Copy Error Report
             </Button>
 
             <Button
@@ -100,7 +225,7 @@ function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError
           </div>
 
           <p className="text-xs text-stone-500 text-center">
-            If the problem persists, try clearing your browser cache or contact support.
+            If the problem persists, please contact support with the error ID above.
           </p>
         </CardContent>
       </Card>
@@ -111,12 +236,34 @@ function DefaultErrorFallback({ error, resetError }: { error?: Error; resetError
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   fallback?: React.ComponentType<{ error?: Error; resetError: () => void }>,
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void,
 ) {
   return function WrappedComponent(props: P) {
     return (
-      <ErrorBoundary fallback={fallback}>
+      <ErrorBoundary fallback={fallback} onError={onError}>
         <Component {...props} />
       </ErrorBoundary>
     )
   }
+}
+
+// Hook for handling async errors in components
+export function useErrorHandler() {
+  const [error, setError] = React.useState<Error | null>(null)
+
+  const handleError = React.useCallback((error: Error) => {
+    console.error("Async error:", error)
+    setError(error)
+  }, [])
+
+  const clearError = React.useCallback(() => {
+    setError(null)
+  }, [])
+
+  // Throw error to be caught by error boundary
+  if (error) {
+    throw error
+  }
+
+  return { handleError, clearError }
 }

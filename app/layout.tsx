@@ -5,6 +5,7 @@ import "./globals.css"
 import { NotificationProvider } from "@/components/notification-provider"
 import { cn } from "@/lib/utils"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { TourProvider } from "@/components/tour-provider"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -40,7 +41,9 @@ export default function RootLayout({
       >
         <ErrorBoundary>
           <NotificationProvider>
-            <div className="relative flex min-h-screen flex-col">{children}</div>
+            <TourProvider>
+              <div className="relative flex min-h-screen flex-col">{children}</div>
+            </TourProvider>
           </NotificationProvider>
         </ErrorBoundary>
       </body>

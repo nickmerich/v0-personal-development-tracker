@@ -1,21 +1,33 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowRight, Target } from "lucide-react"
+import { ArrowRight, Mountain } from "lucide-react"
 import { SetupProgress } from "@/components/setup-progress"
 
 export default function PersonalInfo() {
   const router = useRouter()
   const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
   const [startDate, setStartDate] = useState("")
 
+  useEffect(() => {
+    // Set default start date to today
+    setStartDate(new Date().toISOString().split("T")[0])
+
+    // Load existing data if available
+    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
+    if (userData.name) setName(userData.name)
+    if (userData.email) setEmail(userData.email)
+    if (userData.startDate) setStartDate(userData.startDate)
+  }, [])
+
   const handleNext = () => {
-    if (!name || !startDate) return
+    if (!name.trim() || !startDate) return
 
     const userData = JSON.parse(localStorage.getItem("userData") || "{}")
     localStorage.setItem(
@@ -23,6 +35,7 @@ export default function PersonalInfo() {
       JSON.stringify({
         ...userData,
         name,
+        email,
         startDate,
       }),
     )
@@ -35,47 +48,62 @@ export default function PersonalInfo() {
       <Card className="w-full max-w-md border-forest-200 bg-white/90 backdrop-blur-sm shadow-xl">
         <CardHeader>
           <SetupProgress currentStep={1} totalSteps={5} />
-          <div className="mx-auto mt-4 flex h-12 w-12 items-center justify-center rounded-full bg-forest-100">
-            <Target className="h-6 w-6 text-forest-600" />
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <Mountain className="h-8 w-8 text-forest-600" />
+            <CardTitle className="text-2xl font-bold text-forest-800">The Gryt</CardTitle>
           </div>
-          <CardTitle className="text-2xl font-bold text-center text-forest-800">Getting Started</CardTitle>
-          <CardDescription className="text-center text-stone-600">
-            Let's set up your personal development tracker
+          <CardDescription className="text-center text-stone-600 mt-2">
+            Let's set up your basecamp before you start your climb
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-forest-800">
-              Your Name
-            </Label>
-            <Input
-              id="name"
-              placeholder="Enter your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border-forest-300 focus:border-forest-500 focus:ring-forest-200"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="startDate" className="text-forest-800">
-              Start Date
-            </Label>
-            <Input
-              id="startDate"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border-forest-300 focus:border-forest-500 focus:ring-forest-200"
-            />
-            <p className="text-xs text-stone-500">When will you begin your 90-day journey?</p>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-forest-800">
+                Your Name
+              </Label>
+              <Input
+                id="name"
+                placeholder="Enter your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border-forest-300 focus:border-forest-500 focus:ring-forest-200"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-forest-800">
+                Email (optional)
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border-forest-300 focus:border-forest-500 focus:ring-forest-200"
+              />
+              <p className="text-xs text-stone-500">We'll use this for notifications and progress updates</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="startDate" className="text-forest-800">
+                Start Date
+              </Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border-forest-300 focus:border-forest-500 focus:ring-forest-200"
+              />
+              <p className="text-xs text-stone-500">Day 1 of your 90-day mountain climb</p>
+            </div>
           </div>
         </CardContent>
         <CardFooter>
           <Button
-            className="w-full bg-forest-600 text-white hover:bg-forest-700 shadow-lg"
             onClick={handleNext}
-            disabled={!name || !startDate}
+            disabled={!name.trim() || !startDate}
+            className="w-full bg-forest-600 text-white hover:bg-forest-700 shadow-lg"
           >
             Continue <ArrowRight className="ml-2 h-4 w-4" />
           </Button>

@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAppStore } from "@/lib/store"
+import { useAuth } from "@/lib/auth"
+import { useErrorHandler } from "@/components/error-boundary"
+import { MOUNTAIN_COPY, getElevationMessage, getClimbingMessage, getDaysSinceStart } from "@/lib/mountain-copy"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { MyWhyCard } from "@/components/my-why-card"
@@ -10,93 +14,112 @@ import { CalendarView } from "@/components/calendar-view"
 import { AffirmationCarousel } from "@/components/affirmation-carousel"
 import { EnhancedMilestoneTracker } from "@/components/enhanced-milestone-tracker"
 import { AchievementBadges } from "@/components/achievement-badges"
-import { GamificationStats } from "@/components/gamification-stats"
-import { NotificationSystem } from "@/components/notification-system"
 import { SmartReminders } from "@/components/smart-reminders"
-import { TemplateQuickBrowser } from "@/components/template-quick-browser"
 import { MobileLayout, MobileCard } from "@/components/mobile-layout"
-import { Heart, TrendingUp, Sparkles, Plus, Target, CalendarIcon, BarChart3 } from "lucide-react"
+import { WelcomeModal } from "@/components/welcome-modal"
+import { Mountain, TrendingUp, Target, BarChart3, Flag, Compass, Flame } from "lucide-react"
 import { EnhancedProgress } from "@/components/enhanced-progress"
 import { useNotifications } from "@/components/notification-provider"
-import { Button } from "@/components/ui/button"
 import { PageLoader } from "@/components/loading-spinner"
 
 export default function Dashboard() {
   const router = useRouter()
-  const [userData, setUserData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { userData, isLoading, error, updateUserData } = useAppStore()
+  const { isAuthenticated } = useAuth()
+  const { handleError } = useErrorHandler()
   const [overallProgress, setOverallProgress] = useState(0)
-  const [activeTab, setActiveTab] = useState("today")
+  const [activeTab, setActiveTab] = useState("basecamp")
+  const [streakDays, setStreakDays] = useState(0)
   const { showNotification, requestPermission } = useNotifications()
 
   useEffect(() => {
-    const storedUserData = localStorage.getItem("userData")
+    try {
+      if (!isLoading) {
+        if (!userData) {
+          router.push("/")
+          return
+        }
 
-    if (!storedUserData) {
-      router.push("/")
-      return
-    }
+        if (!userData.setupCompleted) {
+          router.push("/setup/personal-info")
+          return
+        }
 
-    const parsedUserData = JSON.parse(storedUserData)
+        // Set cookies for middleware
+        document.cookie = `hasUserData=true; path=/; max-age=${60 * 60 * 24 * 7}`
+        document.cookie = `setupComplete=${userData.setupCompleted}; path=/; max-age=${60 * 60 * 24 * 7}`
 
-    if (!parsedUserData.setupCompleted) {
-      router.push("/setup/personal-info")
-      return
-    }
+        // Initialize missing data with mountain-themed defaults
+        const updates: any = {}
 
-    // Initialize missing data with mobile-friendly defaults
-    if (!parsedUserData.gamification) {
-      parsedUserData.gamification = {
-        level: 1,
-        xp: 0,
-        totalXp: 0,
-        streak: 0,
-        achievements: [],
-        badges: [],
+        if (!userData.gamification) {
+          updates.gamification = {
+            level: 1,
+            xp: 0,
+            totalXp: 0,
+            streak: 0,
+            achievements: [],
+            badges: [],
+          }
+        }
+
+        if (!userData.milestones) {
+          updates.milestones = []
+        }
+
+        if (!userData.journalEntries) {
+          updates.journalEntries = {}
+        }
+
+        if (!userData.affirmations) {
+          updates.affirmations = [
+            "I am built for this climb",
+            "Every step up makes me stronger",
+            "I don't quit when it gets hard",
+            "The summit is earned, not given",
+            "I control my elevation",
+          ]
+        }
+
+        // Ensure we have the 6 core categories
+        if (!userData.categories || !Array.isArray(userData.categories)) {
+          updates.categories = ["Spiritual", "Physical", "Mental", "Nutritional", "Professional", "Family"]
+          updates.tasks = {}
+          updates.categories.forEach((category) => {
+            updates.tasks[category] = []
+          })
+        }
+
+        if (Object.keys(updates).length > 0) {
+          updateUserData(updates)
+        }
+
+        // Calculate overall progress and streak
+        if (userData.tasks) {
+          let totalTasks = 0
+          let completedTasks = 0
+
+          Object.keys(userData.tasks).forEach((category) => {
+            const categoryTasks = userData.tasks[category] || []
+            totalTasks += categoryTasks.length
+            completedTasks += categoryTasks.filter((task) => task.completed).length
+          })
+
+          setOverallProgress(totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0)
+        }
+
+        // Calculate streak days
+        if (userData.gamification?.streak) {
+          setStreakDays(userData.gamification.streak)
+        }
+
+        requestPermission()
       }
+    } catch (err) {
+      console.error("Dashboard initialization error:", err)
+      handleError(err instanceof Error ? err : new Error("Failed to initialize dashboard"))
     }
-
-    if (!parsedUserData.milestones) {
-      parsedUserData.milestones = []
-    }
-
-    if (!parsedUserData.journalEntries) {
-      parsedUserData.journalEntries = {}
-    }
-
-    if (!parsedUserData.notificationSettings) {
-      parsedUserData.notificationSettings = {
-        enabled: true,
-        dailyCheckin: { enabled: true, time: "09:00" },
-        taskReminders: { enabled: true, advanceTime: 30 },
-        goalDeadlines: { enabled: true, daysBefore: 3 },
-        habitStreaks: { enabled: true, celebrateAt: 7 },
-        milestones: { enabled: true, immediate: true },
-        sound: { enabled: true, volume: 50 },
-        channels: { browser: true, email: false, sms: false },
-        quietHours: { enabled: false, start: "22:00", end: "07:00" },
-      }
-    }
-
-    setUserData(parsedUserData)
-
-    // Calculate overall progress
-    if (parsedUserData.tasks) {
-      let totalTasks = 0
-      let completedTasks = 0
-
-      Object.keys(parsedUserData.tasks).forEach((category) => {
-        const categoryTasks = parsedUserData.tasks[category]
-        totalTasks += categoryTasks.length
-        completedTasks += categoryTasks.filter((task) => task.completed).length
-      })
-
-      setOverallProgress(totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0)
-    }
-
-    setLoading(false)
-    requestPermission()
-  }, [router, requestPermission])
+  }, [userData, isLoading, router, updateUserData, requestPermission, handleError])
 
   const handleTaskComplete = (taskId: string) => {
     if (!userData) return
@@ -115,10 +138,7 @@ export default function Dashboard() {
     })
 
     if (taskFound) {
-      setUserData(newUserData)
-      localStorage.setItem("userData", JSON.stringify(newUserData))
-
-      // Update gamification
+      // Update gamification with mountain theme
       newUserData.gamification.xp += 10
       newUserData.gamification.totalXp += 10
 
@@ -132,222 +152,193 @@ export default function Dashboard() {
         completedTasks += categoryTasks.filter((task) => task.completed).length
       })
 
-      setOverallProgress(totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0)
+      const newProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+      setOverallProgress(newProgress)
+
+      updateUserData(newUserData)
+
+      // Show mountain-themed notification
+      showNotification("🏔️ Step Completed!", getClimbingMessage(completedTasks), "success")
     }
   }
 
-  const handleNotificationSettingsUpdate = (settings: any) => {
-    if (!userData) return
-
-    const newUserData = { ...userData, notificationSettings: settings }
-    setUserData(newUserData)
-    localStorage.setItem("userData", JSON.stringify(newUserData))
-  }
-
-  if (loading || !userData) {
-    return <PageLoader text="Loading your mountain journey..." />
-  }
-
-  if (!userData.categories || !Array.isArray(userData.categories)) {
-    const defaultCategories = ["Physical Health", "Mental Wellness", "Career Growth", "Relationships"]
-    userData.categories = defaultCategories
-    userData.tasks = userData.tasks || {}
-    defaultCategories.forEach((category) => {
-      if (!userData.tasks[category]) {
-        userData.tasks[category] = []
-      }
-    })
-    localStorage.setItem("userData", JSON.stringify(userData))
+  if (isLoading || !userData) {
+    return <PageLoader text="🏔️ Preparing your mountain journey..." />
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-forest-50 to-stone-50">
+      <WelcomeModal />
       <DashboardHeader name={userData.name} startDate={userData.startDate} />
 
       <MobileLayout>
-        {/* Mobile-optimized notification system */}
-        <div className="flex justify-end mb-4">
-          <NotificationSystem userData={userData} onUpdateSettings={handleNotificationSettingsUpdate} />
-        </div>
-
-        {/* Quick Actions Bar - Mobile First */}
-        <MobileCard className="mb-6">
+        {/* Mountain Journey Header */}
+        <MobileCard className="mb-6 bg-gradient-to-r from-forest-600 to-forest-700 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-forest-800">Quick Actions</h2>
-              <p className="text-sm text-stone-600">Jump to what matters most</p>
+              <h1 className="text-xl font-bold flex items-center gap-2">
+                <Mountain className="h-6 w-6" />
+                The Gryt
+              </h1>
+              <p className="text-forest-100 text-sm">{getDaysSinceStart(userData.startDate)}</p>
             </div>
-            <Button
-              onClick={() => router.push("/templates")}
-              size="sm"
-              className="bg-forest-600 text-white hover:bg-forest-700"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add Habits
-            </Button>
+            <div className="text-right">
+              <div className="text-2xl font-bold">{overallProgress}%</div>
+              <div className="text-xs text-forest-200">Elevation Gained</div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <EnhancedProgress
+              value={overallProgress}
+              className="h-2 bg-forest-800"
+              indicatorClassName="bg-gradient-to-r from-earth-400 to-earth-300"
+              showAnimation={true}
+              milestone={50}
+            />
+            <p className="text-xs text-forest-200 mt-2">{getElevationMessage(overallProgress)}</p>
           </div>
         </MobileCard>
 
-        {/* Smart Reminders - Condensed for Mobile */}
+        {/* Streak Counter - Only show if enabled */}
+        {streakDays > 0 && (
+          <MobileCard className="mb-6 border-earth-200 bg-gradient-to-r from-earth-50 to-orange-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-earth-800 flex items-center gap-2">
+                  <Flame className="h-5 w-5 text-earth-600" />
+                  {MOUNTAIN_COPY.dashboard.daysAboveFog.title}
+                </h3>
+                <p className="text-sm text-earth-600">{MOUNTAIN_COPY.dashboard.daysAboveFog.subtitle}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-earth-700">{streakDays}</div>
+                <div className="text-xs text-earth-600">Clean Days</div>
+              </div>
+            </div>
+            <p className="text-xs text-earth-700 mt-2">{MOUNTAIN_COPY.dashboard.daysAboveFog.description}</p>
+          </MobileCard>
+        )}
+
+        {/* Smart Reminders */}
         <SmartReminders
           userData={userData}
           onTaskComplete={handleTaskComplete}
           onGoalUpdate={(goalId) => {
-            showNotification("Goal Updated! 🎉", "Your progress has been recorded", "success")
+            showNotification("🚩 Flag Updated!", "Your progress has been recorded", "success")
           }}
         />
 
-        {/* Progress Overview - Mobile Optimized */}
-        <MobileCard className="mb-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-forest-800">Your Journey</h3>
-                <p className="text-sm text-stone-600">
-                  Day {calculateDayNumber(userData.startDate)} of your transformation
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-forest-600">{overallProgress}%</div>
-                <div className="text-xs text-stone-500">Complete</div>
-              </div>
-            </div>
-            <EnhancedProgress
-              value={overallProgress}
-              className="h-3 bg-stone-100"
-              indicatorClassName="bg-gradient-to-r from-forest-500 to-forest-600"
-              showAnimation={true}
-              milestone={50}
-            />
-          </div>
-        </MobileCard>
-
-        {/* Gamification Stats - Mobile Compact */}
-        <GamificationStats gamification={userData.gamification} />
-
-        {/* Daily Affirmation - Mobile Optimized */}
-        <MobileCard className="mb-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-forest-600" />
-              <h3 className="text-lg font-semibold text-forest-800">Today's Inspiration</h3>
-            </div>
-            <AffirmationCarousel affirmations={userData.affirmations || []} />
-          </div>
-        </MobileCard>
-
-        {/* Mobile-Optimized Tabs */}
+        {/* Mountain-Themed Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-4 bg-forest-100 h-12 rounded-xl p-1">
             <TabsTrigger
-              value="today"
+              value="basecamp"
               className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-10 text-xs font-medium rounded-lg"
             >
               <Target className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Today</span>
+              <span className="hidden sm:inline">Basecamp</span>
             </TabsTrigger>
             <TabsTrigger
-              value="goals"
+              value="flags"
               className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-10 text-xs font-medium rounded-lg"
             >
-              <TrendingUp className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Goals</span>
+              <Flag className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Flags</span>
             </TabsTrigger>
             <TabsTrigger
-              value="calendar"
+              value="trail"
               className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-10 text-xs font-medium rounded-lg"
             >
-              <CalendarIcon className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Calendar</span>
+              <Compass className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Trail</span>
             </TabsTrigger>
             <TabsTrigger
-              value="analytics"
+              value="summit"
               className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-10 text-xs font-medium rounded-lg"
             >
-              <BarChart3 className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Stats</span>
+              <Mountain className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Summit</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="today" className="space-y-4 mt-6">
-            {/* Mobile-first category grid */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {userData.categories.map((category, index) => (
-                <EnhancedCategoryCard
-                  key={index}
-                  category={category}
-                  tasks={userData.tasks[category] || []}
-                  onUpdate={(updatedTasks) => {
-                    const newUserData = { ...userData }
-                    newUserData.tasks[category] = updatedTasks
-                    setUserData(newUserData)
-                    localStorage.setItem("userData", JSON.stringify(newUserData))
-
-                    // Recalculate overall progress
-                    let totalTasks = 0
-                    let completedTasks = 0
-
-                    Object.keys(newUserData.tasks).forEach((cat) => {
-                      const catTasks = newUserData.tasks[cat]
-                      totalTasks += catTasks.length
-                      completedTasks += catTasks.filter((task) => task.completed).length
-                    })
-
-                    setOverallProgress(totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0)
-
-                    // Show notification for task completion
-                    const completedTask = updatedTasks.find(
-                      (task) =>
-                        task.completed &&
-                        !userData.tasks[category]?.find((oldTask) => oldTask.id === task.id && oldTask.completed),
-                    )
-
-                    if (completedTask) {
-                      showNotification("Task Completed! 🎉", `Great job completing "${completedTask.text}"`, "success")
-                    }
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Mobile Template Browser */}
-            <MobileCard className="mt-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-forest-800 flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-forest-600" />
-                      Discover New Habits
-                    </h3>
-                    <p className="text-sm text-stone-600">Proven templates to accelerate your growth</p>
-                  </div>
-                  <Button
-                    onClick={() => router.push("/templates")}
-                    size="sm"
-                    variant="outline"
-                    className="border-forest-300 text-forest-600 hover:bg-forest-50"
-                  >
-                    Browse All
-                  </Button>
+          {/* BASECAMP CHECK-IN */}
+          <TabsContent value="basecamp" className="space-y-4 mt-6">
+            <MobileCard>
+              <div className="space-y-3">
+                <div>
+                  <h2 className="text-xl font-bold text-forest-800">{MOUNTAIN_COPY.dashboard.basecampCheckin.title}</h2>
+                  <p className="text-forest-600 font-medium">{MOUNTAIN_COPY.dashboard.basecampCheckin.subtitle}</p>
+                  <p className="text-sm text-stone-600 mt-2">{MOUNTAIN_COPY.dashboard.basecampCheckin.description}</p>
                 </div>
-                <TemplateQuickBrowser
-                  onSelectTemplate={(templateId) => {
-                    router.push(`/templates?quickAdd=${templateId}`)
-                  }}
-                  onBrowseAll={() => router.push("/templates")}
-                />
               </div>
             </MobileCard>
+
+            {/* Category Cards with Mountain Icons */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {userData.categories.map((category, index) => {
+                const categoryInfo = MOUNTAIN_COPY.categories[category] || {
+                  icon: "🎯",
+                  description: "Track your progress",
+                }
+                return (
+                  <EnhancedCategoryCard
+                    key={index}
+                    category={category}
+                    tasks={userData.tasks[category] || []}
+                    icon={categoryInfo.icon}
+                    description={categoryInfo.description}
+                    onUpdate={(updatedTasks) => {
+                      const newUserData = { ...userData }
+                      newUserData.tasks[category] = updatedTasks
+
+                      // Recalculate overall progress
+                      let totalTasks = 0
+                      let completedTasks = 0
+
+                      Object.keys(newUserData.tasks).forEach((cat) => {
+                        const catTasks = newUserData.tasks[cat]
+                        totalTasks += catTasks.length
+                        completedTasks += catTasks.filter((task) => task.completed).length
+                      })
+
+                      setOverallProgress(totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0)
+
+                      // Show notification for task completion
+                      const completedTask = updatedTasks.find(
+                        (task) =>
+                          task.completed &&
+                          !userData.tasks[category]?.find((oldTask) => oldTask.id === task.id && oldTask.completed),
+                      )
+
+                      if (completedTask) {
+                        showNotification("🏔️ Step Completed!", `Great job completing "${completedTask.text}"`, "success")
+                      }
+
+                      updateUserData(newUserData)
+                    }}
+                  />
+                )
+              })}
+            </div>
           </TabsContent>
 
-          <TabsContent value="goals" className="space-y-4 mt-6">
+          {/* FLAGS ON THE RIDGE */}
+          <TabsContent value="flags" className="space-y-4 mt-6">
+            <MobileCard>
+              <div className="space-y-3">
+                <div>
+                  <h2 className="text-xl font-bold text-forest-800">{MOUNTAIN_COPY.dashboard.flagsOnRidge.title}</h2>
+                  <p className="text-forest-600 font-medium">{MOUNTAIN_COPY.dashboard.flagsOnRidge.subtitle}</p>
+                  <p className="text-sm text-stone-600 mt-2">{MOUNTAIN_COPY.dashboard.flagsOnRidge.description}</p>
+                </div>
+              </div>
+            </MobileCard>
+
             <EnhancedMilestoneTracker
               milestones={userData.milestones}
               onUpdate={(updatedMilestones) => {
                 const newUserData = { ...userData }
                 newUserData.milestones = updatedMilestones
-                setUserData(newUserData)
-                localStorage.setItem("userData", JSON.stringify(newUserData))
 
                 const newlyCompleted = updatedMilestones.find(
                   (milestone) =>
@@ -359,32 +350,55 @@ export default function Dashboard() {
 
                 if (newlyCompleted) {
                   showNotification(
-                    "Milestone Achieved! 🎉",
-                    `Congratulations on completing "${newlyCompleted.title}"!`,
+                    "🚩 Flag Planted!",
+                    `Congratulations on reaching "${newlyCompleted.title}"!`,
                     "success",
                   )
                 }
+
+                updateUserData(newUserData)
               }}
             />
           </TabsContent>
 
-          <TabsContent value="calendar" className="space-y-4 mt-6">
+          {/* YOUR TRAIL MAP */}
+          <TabsContent value="trail" className="space-y-4 mt-6">
+            <MobileCard>
+              <div className="space-y-3">
+                <div>
+                  <h2 className="text-xl font-bold text-forest-800">{MOUNTAIN_COPY.dashboard.trailMap.title}</h2>
+                  <p className="text-forest-600 font-medium">{MOUNTAIN_COPY.dashboard.trailMap.subtitle}</p>
+                  <p className="text-sm text-stone-600 mt-2">{MOUNTAIN_COPY.dashboard.trailMap.description}</p>
+                </div>
+              </div>
+            </MobileCard>
+
             <CalendarView
               userData={userData}
               onJournalUpdate={(date, entry) => {
                 const newUserData = { ...userData }
                 newUserData.journalEntries[date] = entry
-                setUserData(newUserData)
-                localStorage.setItem("userData", JSON.stringify(newUserData))
+                updateUserData(newUserData)
               }}
             />
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-4 mt-6">
+          {/* SUMMIT MODE */}
+          <TabsContent value="summit" className="space-y-4 mt-6">
+            <MobileCard>
+              <div className="space-y-3">
+                <div>
+                  <h2 className="text-xl font-bold text-forest-800">{MOUNTAIN_COPY.dashboard.summitMode.title}</h2>
+                  <p className="text-forest-600 font-medium">{MOUNTAIN_COPY.dashboard.summitMode.subtitle}</p>
+                  <p className="text-sm text-stone-600 mt-2">{MOUNTAIN_COPY.dashboard.summitMode.description}</p>
+                </div>
+              </div>
+            </MobileCard>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <MobileCard>
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-forest-800">Weekly Progress</h3>
+                  <h3 className="text-lg font-semibold text-forest-800">Weekly Elevation</h3>
                   <div className="h-48 flex items-center justify-center bg-forest-50 rounded-lg">
                     <div className="text-center">
                       <BarChart3 className="h-12 w-12 text-forest-400 mx-auto mb-2" />
@@ -396,7 +410,7 @@ export default function Dashboard() {
 
               <MobileCard>
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-forest-800">Habit Streaks</h3>
+                  <h3 className="text-lg font-semibold text-forest-800">Climbing Streaks</h3>
                   <div className="h-48 flex items-center justify-center bg-forest-50 rounded-lg">
                     <div className="text-center">
                       <TrendingUp className="h-12 w-12 text-forest-400 mx-auto mb-2" />
@@ -409,38 +423,29 @@ export default function Dashboard() {
           </TabsContent>
         </Tabs>
 
-        {/* My Why Section - Mobile Optimized */}
+        {/* FUEL FOR THE CLIMB */}
+        <MobileCard className="mt-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Flame className="h-5 w-5 text-forest-600" />
+              <h3 className="text-lg font-semibold text-forest-800">{MOUNTAIN_COPY.dashboard.fuelForClimb.title}</h3>
+            </div>
+            <p className="text-forest-600 font-medium">{MOUNTAIN_COPY.dashboard.fuelForClimb.subtitle}</p>
+            <p className="text-sm text-stone-600">{MOUNTAIN_COPY.dashboard.fuelForClimb.description}</p>
+            <AffirmationCarousel affirmations={userData.affirmations || []} />
+          </div>
+        </MobileCard>
+
+        {/* My Why Section - Mountain Contract */}
         <div className="mt-6">
           <MyWhyCard myWhy={userData.myWhy} bigGoal={userData.bigGoal} />
         </div>
 
-        {/* Achievement Badges - Mobile Compact */}
+        {/* Achievement Badges - Summit Badges */}
         <div className="mt-6">
           <AchievementBadges achievements={userData.gamification.achievements} />
         </div>
       </MobileLayout>
     </div>
   )
-}
-
-function calculateDayNumber(startDate: string): number {
-  try {
-    const start = new Date(startDate)
-    const today = new Date()
-
-    if (isNaN(start.getTime())) {
-      return 1
-    }
-
-    start.setHours(0, 0, 0, 0)
-    today.setHours(0, 0, 0, 0)
-
-    const diffTime = today.getTime() - start.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-    return Math.max(diffDays, 1)
-  } catch (error) {
-    console.error("Error calculating day number:", error)
-    return 1
-  }
 }

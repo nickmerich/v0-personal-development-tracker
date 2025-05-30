@@ -1,593 +1,608 @@
-"use client"
+\
+Let's also update the milestone tracker to use mountain terminology:
+
+```typescriptreact file="components/enhanced-milestone-tracker.tsx"
+[v0-no-op-code-block-prefix]"use client"
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Plus, X, Calendar, CheckCircle2, Sparkles, Eye, ChevronDown, ChevronUp, Repeat, Settings } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { EnhancedProgress } from "@/components/enhanced-progress"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Target, Flag, Calendar, CheckCircle2, Sparkles, TrendingUp, Gift } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useRouter } from "next/navigation"
 
-interface Task {
+interface Milestone {
   id: string
-  text: string
-  completed: boolean
-  scheduledDate?: string
-  priority?: "low" | "medium" | "high"
-  createdAt?: string
-  completedAt?: string
-  tags?: string[]
-  recurring?: {
-    enabled: boolean
-    frequency: "daily" | "weekly" | "monthly"
-    lastReset?: string
-    nextReset?: string
-  }
-}
-
-interface EnhancedCategoryCardProps {
+  title: string
+  description: string
   category: string
-  tasks: Task[]
-  onUpdate: (tasks: Task[]) => void
+  targetValue: number
+  currentValue: number
+  unit: string
+  targetDate: string
+  completed: boolean
+  reward: string
 }
 
-export function EnhancedCategoryCard({ category, tasks, onUpdate }: EnhancedCategoryCardProps) {
-  const router = useRouter()
-  const [newTask, setNewTask] = useState("")
-  const [isAddingTask, setIsAddingTask] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [completingTasks, setCompletingTasks] = useState<Set<string>>(new Set())
-  const [recentlyCompleted, setRecentlyCompleted] = useState<Set<string>>(new Set())
-  const [editingTask, setEditingTask] = useState<string | null>(null)
-  const [taskSettings, setTaskSettings] = useState({
-    recurring: false,
-    frequency: "daily" as "daily" | "weekly" | "monthly",
+interface EnhancedMilestoneTrackerProps {
+  milestones: Milestone[]
+  onUpdate: (milestones: Milestone[]) => void
+}
+
+export function EnhancedMilestoneTracker({ milestones, onUpdate }: EnhancedMilestoneTrackerProps) {
+  const [isAddingMilestone, setIsAddingMilestone] = useState(false)
+  const [updatingMilestones, setUpdatingMilestones] = useState<Set<string>>(new Set())
+  const [newMilestone, setNewMilestone] = useState({
+    title: "",
+    description: "",
+    category: "",
+    targetValue: 0,
+    currentValue: 0,
+    unit: "",
+    targetDate: "",
+    reward: "",
   })
 
-  // Check and reset recurring tasks
-  const checkRecurringTasks = (taskList: Task[]) => {
-    const now = new Date()
-    const today = now.toISOString().split("T")[0]
+  const handleAddMilestone = async () => {
+    // Updated validation - only require title, allow goals without numeric targets
+    if (!newMilestone.title.trim()) {
+      console.error("Goal name is required")
+      return
+    }
 
-    return taskList.map((task) => {
-      if (!task.recurring?.enabled || !task.recurring.nextReset) return task
-
-      const nextResetDate = new Date(task.recurring.nextReset)
-      if (now >= nextResetDate) {
-        // Reset the task
-        const newNextReset = new Date(nextResetDate)
-        switch (task.recurring.frequency) {
-          case "daily":
-            newNextReset.setDate(newNextReset.getDate() + 1)
-            break
-          case "weekly":
-            newNextReset.setDate(newNextReset.getDate() + 7)
-            break
-          case "monthly":
-            newNextReset.setMonth(newNextReset.getMonth() + 1)
-            break
-        }
-
-        return {
-          ...task,
-          completed: false,
-          completedAt: undefined,
-          recurring: {
-            ...task.recurring,
-            lastReset: today,
-            nextReset: newNextReset.toISOString().split("T")[0],
-          },
-        }
+    try {
+      const milestone: Milestone = {
+        id: Date.now().toString(),
+        title: newMilestone.title,
+        description: newMilestone.description,
+        category: newMilestone.category || "personal",
+        targetValue: newMilestone.targetValue || 1, // Default to 1 for non-numeric goals
+        currentValue: newMilestone.currentValue || 0,
+        unit: newMilestone.unit || "completion",
+        targetDate: newMilestone.targetDate,
+        reward: newMilestone.reward,
+        completed: false,
       }
-      return task
+
+      const updatedMilestones = [...milestones, milestone]
+      onUpdate(updatedMilestones)
+
+      // Reset form
+      setNewMilestone({
+        title: "",
+        description: "",
+        category: "",
+        targetValue: 0,
+        currentValue: 0,
+        unit: "",
+        targetDate: "",
+        reward: "",
+      })
+      setIsAddingMilestone(false)
+
+      // Success feedback
+      console.log("Goal created successfully:", milestone.title)
+
+      // Play success sound
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+
+        oscillator.frequency.setValueAtTime(600, audioContext.currentTime)
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.1)
+
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime)
+        gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01)
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+
+        oscillator.start(audioContext.currentTime)
+        oscillator.stop(audioContext.currentTime + 0.2)
+      } catch (e) {
+        // Audio not available, continue silently
+      }
+    } catch (error) {
+      console.error("Error creating goal:", error)
+    }
+  }
+
+  const handleUpdateProgress = async (milestoneId: string, newValue: number) => {
+    setUpdatingMilestones((prev) => new Set(prev).add(milestoneId))
+
+    // Brief delay for better UX
+    await new Promise((resolve) => setTimeout(resolve, 200))
+
+    const updatedMilestones = milestones.map((milestone) => {
+      if (milestone.id === milestoneId) {
+        const completed = newValue >= milestone.targetValue
+        const wasCompleted = milestone.completed
+
+        // Play celebration sound for new completions
+        if (completed && !wasCompleted) {
+          try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+            const oscillator = audioContext.createOscillator()
+            const gainNode = audioContext.createGain()
+
+            oscillator.connect(gainNode)
+            gainNode.connect(audioContext.destination)
+
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
+            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1)
+            oscillator.frequency.setValueAtTime(1200, audioContext.currentTime + 0.2)
+
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime)
+            gainNode.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + 0.01)
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4)
+
+            oscillator.start(audioContext.currentTime)
+            oscillator.stop(audioContext.currentTime + 0.4)
+          } catch (e) {
+            // Audio not available, continue silently
+          }
+        }
+
+        return { ...milestone, currentValue: newValue, completed }
+      }
+      return milestone
+    })
+
+    onUpdate(updatedMilestones)
+    setUpdatingMilestones((prev) => {
+      const newSet = new Set(prev)
+      newSet.delete(milestoneId)
+      return newSet
     })
   }
 
-  // Validate and sanitize tasks with recurring check
-  const validatedTasks = checkRecurringTasks(
-    tasks
-      .filter((task) => task && typeof task === "object" && task.id && task.text)
-      .map((task) => ({
-        ...task,
-        id: task.id || Date.now().toString(),
-        text: task.text || "Untitled Task",
-        completed: Boolean(task.completed),
-        priority: task.priority || "medium",
-        createdAt: task.createdAt || new Date().toISOString(),
-      })),
-  )
-
-  const completedTasks = validatedTasks.filter((task) => task.completed).length
-  const progressPercentage = validatedTasks.length > 0 ? Math.round((completedTasks / validatedTasks.length) * 100) : 0
-
-  // Mobile-first display logic
-  const displayTasks = isExpanded ? validatedTasks : validatedTasks.slice(0, 2)
-  const hasMoreTasks = validatedTasks.length > 2
-
-  const calculateNextReset = (frequency: "daily" | "weekly" | "monthly") => {
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-
-    switch (frequency) {
-      case "daily":
-        return tomorrow.toISOString().split("T")[0]
-      case "weekly":
-        const nextWeek = new Date()
-        nextWeek.setDate(nextWeek.getDate() + 7)
-        return nextWeek.toISOString().split("T")[0]
-      case "monthly":
-        const nextMonth = new Date()
-        nextMonth.setMonth(nextMonth.getMonth() + 1)
-        return nextMonth.toISOString().split("T")[0]
-      default:
-        return tomorrow.toISOString().split("T")[0]
-    }
-  }
-
-  const handleAddTask = () => {
-    if (!newTask.trim()) return
-
-    const newTaskObj: Task = {
-      id: Date.now().toString(),
-      text: newTask.trim(),
-      completed: false,
-      createdAt: new Date().toISOString(),
-      priority: "medium" as const,
-    }
-
-    if (taskSettings.recurring) {
-      newTaskObj.recurring = {
-        enabled: true,
-        frequency: taskSettings.frequency,
-        lastReset: new Date().toISOString().split("T")[0],
-        nextReset: calculateNextReset(taskSettings.frequency),
-      }
-    }
-
-    const updatedTasks = [...validatedTasks, newTaskObj]
-    onUpdate(updatedTasks)
-    setNewTask("")
-    setIsAddingTask(false)
-    setTaskSettings({ recurring: false, frequency: "daily" })
-
-    // Haptic feedback for mobile
-    if (navigator.vibrate) {
-      navigator.vibrate(50)
-    }
-  }
-
-  const handleToggleTask = async (taskId: string) => {
-    const task = validatedTasks.find((t) => t.id === taskId)
-    if (!task) return
-
-    try {
-      setCompletingTasks((prev) => new Set(prev).add(taskId))
-
-      // Optimistic UI update with animation
-      await new Promise((resolve) => setTimeout(resolve, 200))
-
-      const updatedTasks = validatedTasks.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              completed: !task.completed,
-              completedAt: !task.completed ? new Date().toISOString() : undefined,
-            }
-          : task,
-      )
-
-      onUpdate(updatedTasks)
-      setCompletingTasks((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(taskId)
-        return newSet
-      })
-
-      // Celebration animation for completion
-      if (!task.completed) {
-        setRecentlyCompleted((prev) => new Set(prev).add(taskId))
-        setTimeout(() => {
-          setRecentlyCompleted((prev) => {
-            const newSet = new Set(prev)
-            newSet.delete(taskId)
-            return newSet
-          })
-        }, 2000)
-
-        // Haptic feedback for completion
-        if (navigator.vibrate) {
-          navigator.vibrate([100, 50, 100])
-        }
-
-        // Audio feedback
-        try {
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-          const oscillator = audioContext.createOscillator()
-          const gainNode = audioContext.createGain()
-
-          oscillator.connect(gainNode)
-          gainNode.connect(audioContext.destination)
-
-          oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
-          oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1)
-
-          gainNode.gain.setValueAtTime(0, audioContext.currentTime)
-          gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01)
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
-
-          oscillator.start(audioContext.currentTime)
-          oscillator.stop(audioContext.currentTime + 0.2)
-        } catch (e) {
-          // Audio not available
-        }
-      }
-    } catch (error) {
-      console.error("Error toggling task:", error)
-      setCompletingTasks((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(taskId)
-        return newSet
-      })
-    }
-  }
-
-  const handleRemoveTask = (taskId: string) => {
-    const updatedTasks = validatedTasks.filter((task) => task.id !== taskId)
-    onUpdate(updatedTasks)
-  }
-
-  const handleUpdateTaskRecurring = (taskId: string, recurring: Task["recurring"]) => {
-    const updatedTasks = validatedTasks.map((task) => (task.id === taskId ? { ...task, recurring } : task))
-    onUpdate(updatedTasks)
-    setEditingTask(null)
-  }
-
-  const handleViewAllTasks = () => {
-    router.push(`/tasks/${encodeURIComponent(category)}`)
-  }
-
-  const getRecurringIcon = (task: Task) => {
-    if (!task.recurring?.enabled) return null
-    return <Repeat className="h-3 w-3 text-forest-600" title={`Repeats ${task.recurring.frequency}`} />
-  }
+  const completedMilestones = milestones.filter((m) => m.completed)
+  const activeMilestones = milestones.filter((m) => !m.completed)
 
   return (
-    <Card
-      className={cn(
-        "border-forest-200 bg-white/90 backdrop-blur-sm transition-all duration-300",
-        "hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
-        "touch-manipulation",
-      )}
-      data-category={category}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-forest-800 flex items-center gap-2 text-base sm:text-lg">
-            {category}
-            {progressPercentage === 100 && <Sparkles className="h-4 w-4 text-earth-600 animate-pulse" />}
-          </CardTitle>
-          <div className="text-right">
-            <div className="text-lg font-bold text-forest-600">{progressPercentage}%</div>
-            <div className="text-xs text-stone-500">complete</div>
-          </div>
-        </div>
-        <CardDescription className="text-stone-600 text-sm">
-          {completedTasks} of {validatedTasks.length} tasks completed
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {/* Progress bar with enhanced mobile visibility */}
-        <div className="relative">
-          <Progress
-            value={progressPercentage}
-            className="h-3 bg-stone-100 transition-all duration-500"
-            indicatorClassName="bg-gradient-to-r from-forest-500 to-forest-600 transition-all duration-500"
-          />
-          {progressPercentage === 100 && (
-            <div className="absolute inset-0 bg-gradient-to-r from-forest-500/20 to-earth-500/20 rounded-full animate-pulse" />
+    <div className="space-y-6">
+      {/* Stats Overview */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card
+          className={cn(
+            "border-forest-200 bg-white/80 backdrop-blur-sm",
+            "transition-all duration-200 hover:shadow-md hover:scale-[1.02]",
           )}
-        </div>
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-forest-800">Total Goals</CardTitle>
+            <Flag className="h-4 w-4 text-forest-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-forest-800">{milestones.length}</div>
+            <p className="text-xs text-stone-600">Goals you've set</p>
+          </CardContent>
+        </Card>
 
-        {/* Mobile-optimized task list */}
-        <div className="space-y-2">
-          {displayTasks.map((task) => (
-            <div
-              key={task.id}
+        <Card
+          className={cn(
+            "border-forest-200 bg-white/80 backdrop-blur-sm",
+            "transition-all duration-200 hover:shadow-md hover:scale-[1.02]",
+          )}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-forest-800">Completed</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-forest-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-forest-800 flex items-center gap-2">
+              {completedMilestones.length}
+              {completedMilestones.length > 0 && <Sparkles className="h-4 w-4 text-earth-600 animate-pulse" />}
+            </div>
+            <p className="text-xs text-stone-600">Goals achieved</p>
+          </CardContent>
+        </Card>
+
+        <Card
+          className={cn(
+            "border-forest-200 bg-white/80 backdrop-blur-sm",
+            "transition-all duration-200 hover:shadow-md hover:scale-[1.02]",
+          )}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-forest-800">Success Rate</CardTitle>
+            <Target className="h-4 w-4 text-forest-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-forest-800">
+              {milestones.length > 0 ? Math.round((completedMilestones.length / milestones.length) * 100) : 0}%
+            </div>
+            <p className="text-xs text-stone-600">Completion rate</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Add Milestone Button */}
+      <Dialog open={isAddingMilestone} onOpenChange={setIsAddingMilestone}>
+        <DialogTrigger asChild>
+          <Button
+            className={cn(
+              "bg-forest-600 text-white hover:bg-forest-700 shadow-lg",
+              "transition-all duration-200 hover:scale-105 min-h-[44px]",
+            )}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Goal
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="bg-white border-forest-200 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-forest-800 flex items-center gap-2">
+              <Flag className="h-5 w-5 text-forest-600" />
+              Plant Your Flag
+            </DialogTitle>
+            <DialogDescription className="text-stone-600">
+              Set a specific milestone to mark your progress up the mountain and celebrate when you reach it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title" className="text-forest-800">
+                Flag Name
+              </Label>
+              <Input
+                id="title"
+                placeholder="e.g., Reach $10K revenue milestone"
+                value={newMilestone.title}
+                onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
+                className={cn(
+                  "border-forest-300 focus:border-forest-500 transition-all duration-200",
+                  "hover:border-forest-400 min-h-[44px]",
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-forest-800">
+                Why this goal matters to you
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Describe why achieving this goal is important..."
+                value={newMilestone.description}
+                onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
+                className={cn(
+                  "border-forest-300 focus:border-forest-500 transition-all duration-200",
+                  "hover:border-forest-400 resize-none",
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="category" className="text-forest-800">
+                  Category
+                </Label>
+                <Select
+                  value={newMilestone.category}
+                  onValueChange={(value) => setNewMilestone({ ...newMilestone, category: value })}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "border-forest-300 focus:border-forest-500 transition-all duration-200",
+                      "hover:border-forest-400 min-h-[44px]",
+                    )}
+                  >
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-forest-200">
+                    <SelectItem value="financial">Financial</SelectItem>
+                    <SelectItem value="health">Health & Fitness</SelectItem>
+                    <SelectItem value="career">Career & Work</SelectItem>
+                    <SelectItem value="personal">Personal Growth</SelectItem>
+                    <SelectItem value="relationships">Relationships</SelectItem>
+                    <SelectItem value="learning">Learning & Skills</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="targetDate" className="text-forest-800">
+                  Target Date
+                </Label>
+                <Input
+                  id="targetDate"
+                  type="date"
+                  value={newMilestone.targetDate}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, targetDate: e.target.value })}
+                  className={cn(
+                    "border-forest-300 focus:border-forest-500 transition-all duration-200",
+                    "hover:border-forest-400 min-h-[44px]",
+                  )}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="targetValue" className="text-forest-800">
+                  Target Amount
+                </Label>
+                <Input
+                  id="targetValue"
+                  type="number"
+                  placeholder="100"
+                  value={newMilestone.targetValue || ""}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, targetValue: Number(e.target.value) })}
+                  className={cn(
+                    "border-forest-300 focus:border-forest-500 transition-all duration-200",
+                    "hover:border-forest-400 min-h-[44px]",
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currentValue" className="text-forest-800">
+                  Current Amount
+                </Label>
+                <Input
+                  id="currentValue"
+                  type="number"
+                  placeholder="0"
+                  value={newMilestone.currentValue || ""}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, currentValue: Number(e.target.value) })}
+                  className={cn(
+                    "border-forest-300 focus:border-forest-500 transition-all duration-200",
+                    "hover:border-forest-400 min-h-[44px]",
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unit" className="text-forest-800">
+                  Unit
+                </Label>
+                <Input
+                  id="unit"
+                  placeholder="dollars, lbs, days"
+                  value={newMilestone.unit}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, unit: e.target.value })}
+                  className={cn(
+                    "border-forest-300 focus:border-forest-500 transition-all duration-200",
+                    "hover:border-forest-400 min-h-[44px]",
+                  )}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reward" className="text-forest-800">
+                Reward when completed
+              </Label>
+              <Input
+                id="reward"
+                placeholder="e.g., Treat myself to a nice dinner"
+                value={newMilestone.reward}
+                onChange={(e) => setNewMilestone({ ...newMilestone, reward: e.target.value })}
+                className={cn(
+                  "border-forest-300 focus:border-forest-500 transition-all duration-200",
+                  "hover:border-forest-400 min-h-[44px]",
+                )}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={handleAddMilestone}
+              disabled={!newMilestone.title.trim()}
               className={cn(
-                "flex items-center justify-between space-x-3 rounded-lg border p-3 transition-all duration-200",
-                "hover:bg-forest-50/50 hover:border-forest-300 active:bg-forest-100/50",
-                "min-h-[52px]", // Larger touch target for mobile
-                task.completed ? "bg-forest-50/30 border-forest-200" : "bg-white border-forest-200",
-                completingTasks.has(task.id) && "scale-95 opacity-75",
-                recentlyCompleted.has(task.id) && "animate-bounce bg-gradient-to-r from-forest-100 to-earth-100",
+                "bg-forest-600 text-white hover:bg-forest-700",
+                "transition-all duration-200 hover:scale-105 min-h-[44px]",
               )}
             >
-              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                <div className="relative">
-                  <Checkbox
-                    id={`task-${task.id}`}
-                    checked={task.completed}
-                    onCheckedChange={() => handleToggleTask(task.id)}
-                    className={cn(
-                      "border-forest-300 data-[state=checked]:bg-forest-600 data-[state=checked]:border-forest-600",
-                      "h-6 w-6 transition-all duration-200", // Larger for mobile
-                      "hover:scale-110 hover:border-forest-400",
-                      completingTasks.has(task.id) && "animate-pulse",
-                    )}
-                    disabled={completingTasks.has(task.id)}
-                  />
-                  {recentlyCompleted.has(task.id) && (
-                    <CheckCircle2 className="absolute -top-1 -right-1 h-3 w-3 text-forest-600 animate-ping" />
+              Plant Flag
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Active Goals */}
+      {activeMilestones.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-forest-800 mb-4 flex items-center gap-2">
+            <Flag className="h-5 w-5 text-forest-600" />
+            Active Goals
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {activeMilestones.map((milestone) => {
+              const progress = (milestone.currentValue / milestone.targetValue) * 100
+              const daysUntilTarget = milestone.targetDate
+                ? Math.ceil((new Date(milestone.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                : null
+              const isUpdating = updatingMilestones.has(milestone.id)
+
+              return (
+                <Card
+                  key={milestone.id}
+                  className={cn(
+                    "border-forest-200 bg-white/80 backdrop-blur-sm",
+                    "transition-all duration-300 hover:shadow-lg hover:scale-[1.02]",
+                    isUpdating && "animate-pulse",
                   )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <label
-                    htmlFor={`task-${task.id}`}
-                    className={cn(
-                      "text-sm cursor-pointer transition-all duration-200 flex-1 min-w-0 block",
-                      task.completed ? "line-through text-stone-500" : "text-forest-800 hover:text-forest-900",
-                      "select-none leading-relaxed", // Better line height for mobile
-                    )}
-                    style={{
-                      wordBreak: "break-word",
-                      overflowWrap: "break-word",
-                    }}
-                  >
-                    {task.text}
-                  </label>
-                  <div className="flex items-center space-x-2 mt-1">
-                    {getRecurringIcon(task)}
-                    {task.scheduledDate && <Calendar className="h-3 w-3 text-forest-600" />}
-                    {task.recurring?.enabled && (
-                      <span className="text-xs text-forest-600 bg-forest-50 px-2 py-0.5 rounded">
-                        {task.recurring.frequency}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 flex-shrink-0">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "h-9 w-9 text-forest-600 hover:bg-forest-100 hover:text-forest-700",
-                        "transition-all duration-200 hover:scale-110 active:scale-95",
-                        "touch-manipulation",
-                      )}
-                      onClick={() => setEditingTask(task.id)}
-                    >
-                      <Settings className="h-3 w-3" />
-                      <span className="sr-only">Task settings for {task.text}</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Task Settings</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
                       <div>
-                        <Label className="text-sm font-medium">Task Name</Label>
-                        <p className="text-sm text-stone-600 mt-1">{task.text}</p>
+                        <CardTitle className="text-forest-800 mb-3">{milestone.title}</CardTitle>
+                        <CardDescription className="text-stone-600">{milestone.description}</CardDescription>
                       </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`recurring-${task.id}`}
-                            checked={task.recurring?.enabled || false}
-                            onCheckedChange={(checked) => {
-                              const newRecurring = checked
-                                ? {
-                                    enabled: true,
-                                    frequency: task.recurring?.frequency || ("daily" as const),
-                                    lastReset: new Date().toISOString().split("T")[0],
-                                    nextReset: calculateNextReset(task.recurring?.frequency || "daily"),
-                                  }
-                                : undefined
-                              handleUpdateTaskRecurring(task.id, newRecurring)
-                            }}
-                          />
-                          <Label htmlFor={`recurring-${task.id}`} className="text-sm">
-                            Make this task recurring
-                          </Label>
-                        </div>
-
-                        {task.recurring?.enabled && (
-                          <div className="ml-6 space-y-2">
-                            <Label className="text-sm">Frequency</Label>
-                            <Select
-                              value={task.recurring.frequency}
-                              onValueChange={(value: "daily" | "weekly" | "monthly") => {
-                                handleUpdateTaskRecurring(task.id, {
-                                  ...task.recurring!,
-                                  frequency: value,
-                                  nextReset: calculateNextReset(value),
-                                })
-                              }}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="daily">Daily</SelectItem>
-                                <SelectItem value="weekly">Weekly</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            {task.recurring.nextReset && (
-                              <p className="text-xs text-stone-500">
-                                Next reset: {new Date(task.recurring.nextReset).toLocaleDateString()}
-                              </p>
-                            )}
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-forest-600">{milestone.category}</div>
+                        {daysUntilTarget && (
+                          <div className="text-xs text-stone-600 flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {daysUntilTarget > 0 ? `${daysUntilTarget} days left` : "Past target date"}
                           </div>
                         )}
                       </div>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-forest-800">Progress</span>
+                        <span className="text-sm font-medium text-forest-800">
+                          {milestone.currentValue} / {milestone.targetValue} {milestone.unit}
+                        </span>
+                      </div>
+                      <EnhancedProgress
+                        value={progress}
+                        className="h-3 bg-stone-100"
+                        indicatorClassName="bg-gradient-to-r from-forest-500 to-forest-600"
+                        showAnimation={true}
+                        milestone={75}
+                      />
+                    </div>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-9 w-9 text-forest-600 hover:bg-forest-100 hover:text-forest-700",
-                    "transition-all duration-200 hover:scale-110 active:scale-95",
-                    "touch-manipulation",
-                  )}
-                  onClick={() => handleRemoveTask(task.id)}
-                >
-                  <X className="h-3 w-3" />
-                  <span className="sr-only">Remove {task.text}</span>
-                </Button>
-              </div>
-            </div>
-          ))}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Update progress"
+                        className={cn(
+                          "border-forest-300 focus:border-forest-500 transition-all duration-200",
+                          "hover:border-forest-400 min-h-[44px]",
+                        )}
+                        disabled={isUpdating}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const value = Number((e.target as HTMLInputElement).value)
+                            if (value >= 0) {
+                              handleUpdateProgress(milestone.id, value)
+                              ;(e.target as HTMLInputElement).value = ""
+                            }
+                          }
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        className={cn(
+                          "bg-forest-600 text-white hover:bg-forest-700",
+                          "transition-all duration-200 hover:scale-105 min-w-[80px] min-h-[44px]",
+                        )}
+                        disabled={isUpdating}
+                        onClick={(e) => {
+                          const input = e.currentTarget.previousElementSibling as HTMLInputElement
+                          const value = Number(input.value)
+                          if (value >= 0) {
+                            handleUpdateProgress(milestone.id, value)
+                            input.value = ""
+                          }
+                        }}
+                      >
+                        {isUpdating ? <TrendingUp className="h-4 w-4 animate-pulse" /> : "Update"}
+                      </Button>
+                    </div>
 
-          {/* Expand/Collapse button for mobile */}
-          {hasMoreTasks && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="w-full text-forest-600 hover:bg-forest-50 hover:text-forest-700 transition-all duration-200"
-            >
-              {isExpanded ? (
-                <>
-                  <ChevronUp className="mr-2 h-4 w-4" />
-                  Show Less
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="mr-2 h-4 w-4" />
-                  Show {validatedTasks.length - 2} More Tasks
-                </>
-              )}
-            </Button>
-          )}
-
-          {/* View all tasks button */}
-          {validatedTasks.length > 3 && (
-            <div className="pt-2 border-t border-forest-100">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleViewAllTasks}
-                className="w-full text-forest-600 hover:bg-forest-50 hover:text-forest-700 transition-all duration-200"
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                Manage All Tasks ({validatedTasks.length})
-              </Button>
-            </div>
-          )}
+                    {milestone.reward && (
+                      <div className="p-3 bg-earth-50 rounded-md border border-earth-200">
+                        <div className="flex items-center gap-2">
+                          <Gift className="h-4 w-4 text-earth-600" />
+                          <span className="text-sm font-medium text-earth-800">Reward when completed:</span>
+                        </div>
+                        <p className="text-sm text-earth-700 mt-1">{milestone.reward}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
         </div>
+      )}
 
-        {/* Mobile-optimized add task interface */}
-        {isAddingTask ? (
-          <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
-            <Input
-              placeholder="What would you like to accomplish?"
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault()
-                  handleAddTask()
-                } else if (e.key === "Escape") {
-                  setIsAddingTask(false)
-                  setNewTask("")
-                  setTaskSettings({ recurring: false, frequency: "daily" })
-                }
-              }}
-              className={cn(
-                "border-forest-300 focus:border-forest-500 focus:ring-forest-200",
-                "transition-all duration-200 text-base", // Larger text for mobile
-                "min-h-[48px]", // Larger touch target
-              )}
-              autoFocus
-            />
-
-            {/* Recurring task options */}
-            <div className="space-y-2 p-3 bg-forest-50/50 rounded-lg border border-forest-200">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="new-task-recurring"
-                  checked={taskSettings.recurring}
-                  onCheckedChange={(checked) => setTaskSettings((prev) => ({ ...prev, recurring: Boolean(checked) }))}
-                />
-                <Label htmlFor="new-task-recurring" className="text-sm">
-                  Make this task recurring
-                </Label>
-              </div>
-
-              {taskSettings.recurring && (
-                <Select
-                  value={taskSettings.frequency}
-                  onValueChange={(value: "daily" | "weekly" | "monthly") =>
-                    setTaskSettings((prev) => ({ ...prev, frequency: value }))
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div className="flex space-x-2">
-              <Button
-                onClick={handleAddTask}
-                disabled={!newTask.trim()}
+      {/* Completed Goals */}
+      {completedMilestones.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-forest-800 mb-4 flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-forest-600" />
+            Completed Goals
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {completedMilestones.map((milestone) => (
+              <Card
+                key={milestone.id}
                 className={cn(
-                  "bg-forest-600 text-white hover:bg-forest-700 flex-1",
-                  "transition-all duration-200 hover:scale-105 active:scale-95",
-                  "min-h-[48px]",
+                  "border-forest-300 bg-gradient-to-r from-forest-50 to-earth-50",
+                  "transition-all duration-200 hover:shadow-md hover:scale-[1.02]",
                 )}
               >
-                Add Task
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsAddingTask(false)
-                  setNewTask("")
-                  setTaskSettings({ recurring: false, frequency: "daily" })
-                }}
-                className="border-forest-300 text-forest-600 hover:bg-forest-50 min-h-[48px] px-6"
-              >
-                Cancel
-              </Button>
-            </div>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-forest-800 flex items-center gap-2 mb-3">
+                        <CheckCircle2 className="h-5 w-5 text-forest-600" />
+                        {milestone.title}
+                        <Sparkles className="h-4 w-4 text-earth-600 animate-pulse" />
+                      </CardTitle>
+                      <CardDescription className="text-stone-600">{milestone.description}</CardDescription>
+                    </div>
+                    <div className="text-sm font-medium text-forest-600">{milestone.category}</div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-forest-800">Goal Achieved!</span>
+                    <span className="text-sm font-medium text-forest-800">
+                      {milestone.targetValue} {milestone.unit}
+                    </span>
+                  </div>
+                  <EnhancedProgress
+                    value={100}
+                    className="h-3 bg-stone-100"
+                    indicatorClassName="bg-forest-600"
+                    showAnimation={true}
+                  />
+
+                  {milestone.reward && (
+                    <div className="mt-4 p-3 bg-earth-100 rounded-md border border-earth-300">
+                      <div className="flex items-center gap-2">
+                        <Gift className="h-4 w-4 text-earth-700" />
+                        <span className="text-sm font-medium text-earth-800">Reward earned:</span>
+                      </div>
+                      <p className="text-sm text-earth-700 mt-1">{milestone.reward}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        ) : (
-          <Button
-            variant="outline"
-            className={cn(
-              "w-full border-forest-300 text-forest-600 hover:bg-forest-50",
-              "transition-all duration-200 hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]",
-              "min-h-[48px] add-task-button text-base",
-              "touch-manipulation",
-            )}
-            onClick={() => setIsAddingTask(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add New Task
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+
+      {milestones.length === 0 && (
+        <Card className="border-forest-200 bg-white/80 backdrop-blur-sm">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Flag className="h-12 w-12 text-forest-600 mb-4" />
+            <h3 className="text-lg font-semibold text-forest-800 mb-2">No Flags Planted</h3>
+            <p className="text-stone-600 text-center mb-4">
+              Plant your first flag to mark important milestones on your climb to the summit.
+            </p>
+            <Button
+              onClick={() => setIsAddingMilestone(true)}
+              className={cn(
+                "bg-forest-600 text-white hover:bg-forest-700",
+                "transition-all duration-200 hover:scale-105 min-h-[44px]",
+              )}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Plant Your First Flag
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }

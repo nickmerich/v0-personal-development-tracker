@@ -180,6 +180,24 @@
     animation: gentle-pulse 2s infinite;
   }
 
+  @keyframes avatarPop {
+    0% {
+      transform: scale(0.5);
+      opacity: 0;
+    }
+    70% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-avatar-pop {
+    animation: avatarPop 0.8s ease-out forwards;
+  }
+
   /* Touch target improvements */
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
