@@ -46,8 +46,8 @@ export default function Dashboard() {
         }
 
         // Set cookies for middleware
-        document.cookie = `hasUserData=true; path=/; max-age=${60 * 60 * 24 * 7}`
-        document.cookie = `setupComplete=${userData.setupCompleted}; path=/; max-age=${60 * 60 * 24 * 7}`
+        document.cookie = `hasUserData=true; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+        document.cookie = `setupComplete=${userData.setupCompleted}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
 
         // Initialize missing data with mountain-themed defaults
         const updates: any = {}
@@ -172,19 +172,19 @@ export default function Dashboard() {
       <DashboardHeader name={userData.name} startDate={userData.startDate} />
 
       <MobileLayout>
-        {/* Mountain Journey Header */}
+        {/* Mobile-Optimized Mountain Journey Header */}
         <MobileCard className="mb-6 bg-gradient-to-r from-forest-600 to-forest-700 text-white">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold flex items-center gap-2">
-                <Mountain className="h-6 w-6" />
+            <div className="flex-1">
+              <h1 className="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <Mountain className="h-5 w-5 sm:h-6 sm:w-6" />
                 The Gryt
               </h1>
-              <p className="text-forest-100 text-sm">{getDaysSinceStart(userData.startDate)}</p>
+              <p className="text-forest-100 text-xs sm:text-sm">{getDaysSinceStart(userData.startDate)}</p>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold">{overallProgress}%</div>
-              <div className="text-xs text-forest-200">Elevation Gained</div>
+              <div className="text-xl sm:text-2xl font-bold">{overallProgress}%</div>
+              <div className="text-xs text-forest-200">Elevation</div>
             </div>
           </div>
           <div className="mt-4">
@@ -230,34 +230,34 @@ export default function Dashboard() {
 
         {/* Mountain-Themed Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 bg-forest-100 h-12 rounded-xl p-1">
+          <TabsList className="grid w-full grid-cols-4 bg-forest-100 h-14 rounded-xl p-1">
             <TabsTrigger
               value="basecamp"
-              className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-10 text-xs font-medium rounded-lg"
+              className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-12 text-xs font-medium rounded-lg flex flex-col items-center justify-center gap-1"
             >
-              <Target className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Basecamp</span>
+              <Target className="h-4 w-4" />
+              <span className="text-xs">Basecamp</span>
             </TabsTrigger>
             <TabsTrigger
               value="flags"
-              className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-10 text-xs font-medium rounded-lg"
+              className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-12 text-xs font-medium rounded-lg flex flex-col items-center justify-center gap-1"
             >
-              <Flag className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Flags</span>
+              <Flag className="h-4 w-4" />
+              <span className="text-xs">Flags</span>
             </TabsTrigger>
             <TabsTrigger
               value="trail"
-              className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-10 text-xs font-medium rounded-lg"
+              className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-12 text-xs font-medium rounded-lg flex flex-col items-center justify-center gap-1"
             >
-              <Compass className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Trail</span>
+              <Compass className="h-4 w-4" />
+              <span className="text-xs">Trail</span>
             </TabsTrigger>
             <TabsTrigger
               value="summit"
-              className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-10 text-xs font-medium rounded-lg"
+              className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-12 text-xs font-medium rounded-lg flex flex-col items-center justify-center gap-1"
             >
-              <Mountain className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Summit</span>
+              <Mountain className="h-4 w-4" />
+              <span className="text-xs">Summit</span>
             </TabsTrigger>
           </TabsList>
 

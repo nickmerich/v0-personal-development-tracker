@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Mountain } from "lucide-react"
+import { GrytLogo } from "@/components/gryt-logo"
 
 interface WelcomeModalProps {
   open: boolean
@@ -15,17 +15,17 @@ export function WelcomeModal({ open, onClose, startTour, skipTour }: WelcomeModa
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
-        <DialogTitle className="text-2xl font-bold text-forest-800 flex items-center gap-2">
-          <Mountain className="h-8 w-8 text-forest-600" />
-          Welcome to The Gryt
-        </DialogTitle>
-        <DialogDescription className="text-stone-600 text-lg">
+        <div className="flex items-center justify-center mb-4">
+          <GrytLogo size="lg" />
+        </div>
+        <DialogTitle className="text-2xl font-bold text-forest-800 text-center">Welcome to The Gryt</DialogTitle>
+        <DialogDescription className="text-stone-600 text-lg text-center">
           Your 90-day ascent to the summit begins now.
         </DialogDescription>
 
         <div className="space-y-4">
-          <p className="text-stone-700">
-            🏔️ <strong>You're not here to coast. You're here to climb.</strong>
+          <p className="text-stone-700 text-center">
+            <strong>You're not here to coast. You're here to climb.</strong>
           </p>
           <p className="text-stone-600">
             Track your daily non-negotiables across 6 core categories. Plant flags for major milestones. Fuel your mind

@@ -33,23 +33,46 @@ export default function CalendarPreferences() {
 
     // Initialize default affirmations
     const defaultAffirmations = [
-      "I am committed to consistent daily progress toward my goals.",
-      "Every step I take brings me closer to the person I want to become.",
-      "I have the strength and determination to overcome any obstacle.",
-      "My goals are achievable, and I am worthy of success.",
-      "I am patient, persistent, and purposeful in my growth.",
+      "I am built for this climb",
+      "Every step up makes me stronger",
+      "I don't quit when it gets hard",
+      "The summit is earned, not given",
+      "I control my elevation",
     ]
 
-    localStorage.setItem(
-      "userData",
-      JSON.stringify({
-        ...userData,
-        calendarPreferences: preferences,
-        affirmations: defaultAffirmations,
-        milestones: [],
-        setupCompleted: true,
-      }),
-    )
+    // Ensure we have the 6 core categories with empty task arrays
+    const coreCategories = ["Spiritual", "Physical", "Mental", "Nutritional", "Professional", "Family"]
+    const tasks = {}
+    coreCategories.forEach((category) => {
+      tasks[category] = userData.tasks?.[category] || []
+    })
+
+    const completedUserData = {
+      ...userData,
+      calendarPreferences: preferences,
+      affirmations: userData.affirmations || defaultAffirmations,
+      categories: userData.categories || coreCategories,
+      tasks,
+      milestones: userData.milestones || [],
+      journalEntries: userData.journalEntries || {},
+      gamification: userData.gamification || {
+        level: 1,
+        xp: 0,
+        totalXp: 0,
+        streak: 0,
+        achievements: [],
+        badges: [],
+      },
+      appliedTemplates: userData.appliedTemplates || [],
+      notificationSettings: userData.notificationSettings || {},
+      setupCompleted: true,
+    }
+
+    localStorage.setItem("userData", JSON.stringify(completedUserData))
+
+    // Set cookies for middleware
+    document.cookie = `hasUserData=true; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+    document.cookie = `setupComplete=true; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
 
     router.push("/dashboard")
   }
@@ -170,7 +193,7 @@ export default function CalendarPreferences() {
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
           <Button onClick={handleComplete} className="bg-forest-600 text-white hover:bg-forest-700 shadow-lg">
-            Get Started <ArrowRight className="ml-2 h-4 w-4" />
+            Complete Setup <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>
       </Card>

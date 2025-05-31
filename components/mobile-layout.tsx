@@ -70,6 +70,7 @@ interface MobileButtonProps {
   size?: "sm" | "md" | "lg" | "full"
   disabled?: boolean
   className?: string
+  type?: "button" | "submit" | "reset"
 }
 
 export function MobileButton({
@@ -79,25 +80,28 @@ export function MobileButton({
   size = "md",
   disabled = false,
   className,
+  type = "button",
 }: MobileButtonProps) {
-  const baseClasses = "font-medium rounded-xl transition-all duration-200 touch-manipulation active:scale-95"
+  const baseClasses =
+    "font-medium rounded-xl transition-all duration-200 touch-manipulation active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2"
 
   const variantClasses = {
-    primary: "bg-forest-600 text-white hover:bg-forest-700 shadow-sm",
-    secondary: "bg-forest-100 text-forest-900 hover:bg-forest-200",
-    outline: "border-2 border-forest-300 text-forest-700 hover:bg-forest-50",
-    ghost: "text-forest-700 hover:bg-forest-100",
+    primary: "bg-forest-600 text-white hover:bg-forest-700 shadow-sm focus:ring-forest-500",
+    secondary: "bg-forest-100 text-forest-900 hover:bg-forest-200 focus:ring-forest-500",
+    outline: "border-2 border-forest-300 text-forest-700 hover:bg-forest-50 focus:ring-forest-500",
+    ghost: "text-forest-700 hover:bg-forest-100 focus:ring-forest-500",
   }
 
   const sizeClasses = {
-    sm: "px-4 py-2 text-sm min-h-[40px]",
-    md: "px-6 py-3 text-base min-h-[48px]",
-    lg: "px-8 py-4 text-lg min-h-[56px]",
+    sm: "px-4 py-2 text-sm min-h-[40px]", // 40px minimum for accessibility
+    md: "px-6 py-3 text-base min-h-[48px]", // 48px recommended
+    lg: "px-8 py-4 text-lg min-h-[56px]", // 56px comfortable
     full: "w-full px-6 py-3 text-base min-h-[48px]",
   }
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
       className={cn(
@@ -110,5 +114,33 @@ export function MobileButton({
     >
       {children}
     </button>
+  )
+}
+
+// Mobile-optimized input wrapper
+interface MobileInputWrapperProps {
+  children: ReactNode
+  label?: string
+  error?: string
+  required?: boolean
+  className?: string
+}
+
+export function MobileInputWrapper({ children, label, error, required, className }: MobileInputWrapperProps) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
+      {children}
+      {error && (
+        <p className="text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
