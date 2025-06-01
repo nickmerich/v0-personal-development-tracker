@@ -1,194 +1,145 @@
 "use client"
 
-import React from "react"
+import { storage } from "@/lib/storage"
 
 export interface User {
   id: string
   email: string
   name: string
   createdAt: string
+  hasCloudBackup: boolean
 }
 
 export interface AuthState {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
+  error: string | null
 }
 
-class AuthService {
-  private static instance: AuthService
-  private authState: AuthState = {
-    user: null,
-    isAuthenticated: false,
-    isLoading: true,
-  }
-  private listeners: ((state: AuthState) => void)[] = []
+// Simple auth functions without React context for now
+export const authService = {
+  // Check if user is authenticated
+  isAuthenticated: (): boolean => {
+    if (typeof window === "undefined") return false
+    const user = storage.get("cachedUser")
+    return !!user
+  },
 
-  static getInstance(): AuthService {
-    if (!AuthService.instance) {
-      AuthService.instance = new AuthService()
-    }
-    return AuthService.instance
-  }
+  // Get current user
+  getCurrentUser: (): User | null => {
+    if (typeof window === "undefined") return null
+    return storage.get("cachedUser")
+  },
 
-  constructor() {
-    this.initializeAuth()
-  }
-
-  private async initializeAuth() {
+  // Sign in function
+  signIn: async (email: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Check for existing session
-      const token = localStorage.getItem("authToken")
-      const userData = localStorage.getItem("userData")
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, name }),
+        credentials: "include",
+      })
 
-      if (token && userData) {
-        const parsedUserData = JSON.parse(userData)
-        this.authState = {
-          user: {
-            id: parsedUserData.id || "local-user",
-            email: parsedUserData.email || "user@local.dev",
-            name: parsedUserData.name || "User",
-            createdAt: parsedUserData.createdAt || new Date().toISOString(),
-          },
-          isAuthenticated: true,
-          isLoading: false,
-        }
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        // Cache user data
+        storage.set("cachedUser", result.user)
+
+        // Sync data after sign in
+        await storage.syncData()
+
+        return { success: true }
       } else {
-        this.authState.isLoading = false
+        return { success: false, error: result.error || "Sign in failed" }
       }
     } catch (error) {
-      console.error("Auth initialization error:", error)
-      this.authState.isLoading = false
+      return { success: false, error: "Network error during sign in" }
     }
+  },
 
-    this.notifyListeners()
-  }
-
-  subscribe(listener: (state: AuthState) => void) {
-    this.listeners.push(listener)
-    return () => {
-      this.listeners = this.listeners.filter((l) => l !== listener)
-    }
-  }
-
-  private notifyListeners() {
-    this.listeners.forEach((listener) => listener(this.authState))
-  }
-
-  async login(email: string, password: string): Promise<User> {
+  // Sign up function
+  signUp: async (email: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      this.authState.isLoading = true
-      this.notifyListeners()
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, name }),
+        credentials: "include",
+      })
 
-      // For now, simulate API call with localStorage
-      // In production, replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const result = await response.json()
 
-      if (!email || !password) {
-        throw new Error("Email and password are required")
+      if (response.ok && result.success) {
+        // Cache user data
+        storage.set("cachedUser", result.user)
+
+        // Migrate local data to cloud
+        await authService.migrateLocalDataToCloud()
+
+        return { success: true }
+      } else {
+        return { success: false, error: result.error || "Sign up failed" }
       }
-
-      const user: User = {
-        id: `user-${Date.now()}`,
-        email,
-        name: email.split("@")[0],
-        createdAt: new Date().toISOString(),
-      }
-
-      // Store auth token and user data
-      const token = btoa(`${email}:${Date.now()}`)
-      localStorage.setItem("authToken", token)
-
-      this.authState = {
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      }
-
-      this.notifyListeners()
-      return user
     } catch (error) {
-      this.authState.isLoading = false
-      this.notifyListeners()
-      throw error
+      return { success: false, error: "Network error during sign up" }
     }
-  }
+  },
 
-  async register(email: string, password: string, name: string): Promise<User> {
+  // Sign out function
+  signOut: async (): Promise<boolean> => {
     try {
-      this.authState.isLoading = true
-      this.notifyListeners()
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      if (!email || !password || !name) {
-        throw new Error("All fields are required")
+      if (response.ok) {
+        // Remove cached user
+        storage.remove("cachedUser")
+        return true
       }
 
-      const user: User = {
-        id: `user-${Date.now()}`,
-        email,
-        name,
-        createdAt: new Date().toISOString(),
-      }
-
-      const token = btoa(`${email}:${Date.now()}`)
-      localStorage.setItem("authToken", token)
-
-      this.authState = {
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      }
-
-      this.notifyListeners()
-      return user
+      return false
     } catch (error) {
-      this.authState.isLoading = false
-      this.notifyListeners()
-      throw error
+      console.error("Error during sign out:", error)
+      return false
     }
-  }
+  },
 
-  logout() {
-    localStorage.removeItem("authToken")
-    this.authState = {
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
+  // Migrate local data to cloud
+  migrateLocalDataToCloud: async (): Promise<boolean> => {
+    try {
+      const localData = storage.getUserData()
+      if (!localData || Object.keys(localData).length === 0) {
+        return true // No data to migrate
+      }
+
+      const response = await fetch("/api/data/migrate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userData: localData }),
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        console.log("Successfully migrated local data to cloud")
+        return true
+      } else {
+        console.error("Failed to migrate local data to cloud")
+        return false
+      }
+    } catch (error) {
+      console.error("Error migrating local data:", error)
+      return false
     }
-    this.notifyListeners()
-  }
-
-  getCurrentUser(): User | null {
-    return this.authState.user
-  }
-
-  getAuthState(): AuthState {
-    return this.authState
-  }
-
-  isAuthenticated(): boolean {
-    return this.authState.isAuthenticated
-  }
-}
-
-export const authService = AuthService.getInstance()
-
-// React hook for using auth in components
-export function useAuth() {
-  const [authState, setAuthState] = React.useState<AuthState>(authService.getAuthState())
-
-  React.useEffect(() => {
-    const unsubscribe = authService.subscribe(setAuthState)
-    return unsubscribe
-  }, [])
-
-  return {
-    ...authState,
-    login: authService.login.bind(authService),
-    register: authService.register.bind(authService),
-    logout: authService.logout.bind(authService),
-  }
+  },
 }
