@@ -22,6 +22,7 @@ import { WidgetSystem } from "@/components/dashboard/widget-system"
 import { setupManager } from "@/lib/setup-manager"
 import { KPIService, type KPIMetrics } from "@/lib/kpi-service"
 import { Mountain, Target, Flag, Compass, BarChart3, TrendingUp, Flame, Activity } from "lucide-react"
+import { AdvancedDashboard } from "@/components/dashboard/advanced-dashboard"
 
 export default function Dashboard() {
   const router = useRouter()
@@ -187,7 +188,7 @@ export default function Dashboard() {
 
         {/* Enhanced Tabs with Analytics */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 bg-forest-100 h-14 rounded-xl p-1">
+          <TabsList className="grid w-full grid-cols-6 bg-forest-100 h-14 rounded-xl p-1">
             <TabsTrigger
               value="overview"
               className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-12 text-xs font-medium rounded-lg flex flex-col items-center justify-center gap-1"
@@ -222,6 +223,13 @@ export default function Dashboard() {
             >
               <Mountain className="h-4 w-4" />
               <span className="text-xs">Summit</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="analytics"
+              className="data-[state=active]:bg-forest-600 data-[state=active]:text-white h-12 text-xs font-medium rounded-lg flex flex-col items-center justify-center gap-1"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="text-xs">Analytics</span>
             </TabsTrigger>
           </TabsList>
 
@@ -326,6 +334,11 @@ export default function Dashboard() {
                 </div>
               </MobileCard>
             </div>
+          </TabsContent>
+
+          {/* ANALYTICS */}
+          <TabsContent value="analytics" className="space-y-4 mt-6">
+            <AdvancedDashboard userData={userData} onDataUpdate={updateUserData} />
           </TabsContent>
         </Tabs>
 
