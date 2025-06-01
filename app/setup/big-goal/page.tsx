@@ -7,31 +7,45 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowRight, ArrowLeft, Target } from "lucide-react"
 import { SetupProgress } from "@/components/setup-progress"
+import { storage } from "@/lib/storage"
+import { setupManager } from "@/lib/setup-manager"
 
 export default function BigGoal() {
   const router = useRouter()
   const [bigGoal, setBigGoal] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-    if (userData.bigGoal) {
+    const userData = storage.getUserData()
+    if (userData?.bigGoal) {
       setBigGoal(userData.bigGoal)
     }
-  }, [])
 
-  const handleNext = () => {
+    // Check if previous step was completed
+    if (!setupManager.isStepCompleted("my-why")) {
+      router.push("/setup/my-why")
+    }
+  }, [router])
+
+  const handleNext = async () => {
     if (!bigGoal.trim()) return
 
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-    localStorage.setItem(
-      "userData",
-      JSON.stringify({
-        ...userData,
-        bigGoal,
-      }),
-    )
+    setIsLoading(true)
 
-    router.push("/setup/categories")
+    try {
+      // Save data
+      storage.updateUserData({ bigGoal })
+
+      // Mark step as completed
+      setupManager.markStepCompleted("big-goal")
+
+      // Navigate to next step
+      router.push("/setup/categories")
+    } catch (error) {
+      console.error("Error saving big goal:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -72,15 +86,16 @@ export default function BigGoal() {
             variant="outline"
             onClick={() => router.push("/setup/my-why")}
             className="border-forest-300 text-forest-600 hover:bg-forest-50"
+            disabled={isLoading}
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
           <Button
             onClick={handleNext}
-            disabled={!bigGoal.trim()}
+            disabled={!bigGoal.trim() || isLoading}
             className="bg-forest-600 text-white hover:bg-forest-700 shadow-lg"
           >
-            Continue <ArrowRight className="ml-2 h-4 w-4" />
+            {isLoading ? "Saving..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>
       </Card>

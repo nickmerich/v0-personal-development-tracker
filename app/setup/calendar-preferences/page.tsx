@@ -9,6 +9,8 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowRight, ArrowLeft, Settings } from "lucide-react"
 import { SetupProgress } from "@/components/setup-progress"
+import { storage } from "@/lib/storage"
+import { setupManager } from "@/lib/setup-manager"
 
 export default function CalendarPreferences() {
   const router = useRouter()
@@ -20,61 +22,76 @@ export default function CalendarPreferences() {
     trackHabits: true,
     scheduleWorkouts: false,
   })
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-    if (userData.calendarPreferences) {
+    const userData = storage.getUserData()
+    if (userData?.calendarPreferences) {
       setPreferences(userData.calendarPreferences)
     }
-  }, [])
 
-  const handleComplete = () => {
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-
-    // Initialize default affirmations
-    const defaultAffirmations = [
-      "I am built for this climb",
-      "Every step up makes me stronger",
-      "I don't quit when it gets hard",
-      "The summit is earned, not given",
-      "I control my elevation",
-    ]
-
-    // Ensure we have the 6 core categories with empty task arrays
-    const coreCategories = ["Spiritual", "Physical", "Mental", "Nutritional", "Professional", "Family"]
-    const tasks = {}
-    coreCategories.forEach((category) => {
-      tasks[category] = userData.tasks?.[category] || []
-    })
-
-    const completedUserData = {
-      ...userData,
-      calendarPreferences: preferences,
-      affirmations: userData.affirmations || defaultAffirmations,
-      categories: userData.categories || coreCategories,
-      tasks,
-      milestones: userData.milestones || [],
-      journalEntries: userData.journalEntries || {},
-      gamification: userData.gamification || {
-        level: 1,
-        xp: 0,
-        totalXp: 0,
-        streak: 0,
-        achievements: [],
-        badges: [],
-      },
-      appliedTemplates: userData.appliedTemplates || [],
-      notificationSettings: userData.notificationSettings || {},
-      setupCompleted: true,
+    // Check if previous step was completed
+    if (!setupManager.isStepCompleted("categories")) {
+      router.push("/setup/categories")
     }
+  }, [router])
 
-    localStorage.setItem("userData", JSON.stringify(completedUserData))
+  const handleComplete = async () => {
+    setIsLoading(true)
 
-    // Set cookies for middleware
-    document.cookie = `hasUserData=true; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
-    document.cookie = `setupComplete=true; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+    try {
+      // Initialize default affirmations
+      const defaultAffirmations = [
+        "I am built for this climb",
+        "Every step up makes me stronger",
+        "I don't quit when it gets hard",
+        "The summit is earned, not given",
+        "I control my elevation",
+      ]
 
-    router.push("/dashboard")
+      // Get current user data
+      const userData = storage.getUserData() || {}
+
+      // Ensure we have the 6 core categories with empty task arrays
+      const coreCategories = ["Spiritual", "Physical", "Mental", "Nutritional", "Professional", "Family"]
+      const tasks = userData.tasks || {}
+      coreCategories.forEach((category) => {
+        if (!tasks[category]) {
+          tasks[category] = []
+        }
+      })
+
+      // Update user data with all required fields
+      storage.updateUserData({
+        calendarPreferences: preferences,
+        affirmations: userData.affirmations || defaultAffirmations,
+        categories: userData.categories || coreCategories,
+        tasks,
+        milestones: userData.milestones || [],
+        journalEntries: userData.journalEntries || {},
+        gamification: userData.gamification || {
+          level: 1,
+          xp: 0,
+          totalXp: 0,
+          streak: 0,
+          achievements: [],
+          badges: [],
+        },
+        appliedTemplates: userData.appliedTemplates || [],
+        notificationSettings: userData.notificationSettings || {},
+      })
+
+      // Mark step as completed and complete the setup
+      setupManager.markStepCompleted("calendar-preferences")
+      setupManager.completeSetup()
+
+      // Navigate to dashboard
+      router.push("/dashboard")
+    } catch (error) {
+      console.error("Error completing setup:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -189,11 +206,16 @@ export default function CalendarPreferences() {
             variant="outline"
             onClick={() => router.push("/setup/categories")}
             className="border-forest-300 text-forest-600 hover:bg-forest-50"
+            disabled={isLoading}
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
-          <Button onClick={handleComplete} className="bg-forest-600 text-white hover:bg-forest-700 shadow-lg">
-            Complete Setup <ArrowRight className="ml-2 h-4 w-4" />
+          <Button
+            onClick={handleComplete}
+            className="bg-forest-600 text-white hover:bg-forest-700 shadow-lg"
+            disabled={isLoading}
+          >
+            {isLoading ? "Completing Setup..." : "Complete Setup"} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>
       </Card>

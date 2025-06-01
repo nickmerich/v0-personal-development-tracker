@@ -2,103 +2,142 @@
 
 import type React from "react"
 
-import { useRef, useState } from "react"
+import { useState, useRef } from "react"
+import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
+// Swipeable Card Component
 interface SwipeableCardProps {
-  children: React.ReactNode
+  children: ReactNode
   onSwipeLeft?: () => void
   onSwipeRight?: () => void
+  threshold?: number
   className?: string
 }
 
-export function SwipeableCard({ children, onSwipeLeft, onSwipeRight, className }: SwipeableCardProps) {
-  const [startX, setStartX] = useState(0)
-  const [currentX, setCurrentX] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
+export function SwipeableCard({ children, onSwipeLeft, onSwipeRight, threshold = 100, className }: SwipeableCardProps) {
+  const [touchStart, setTouchStart] = useState(0)
+  const [touchEnd, setTouchEnd] = useState(0)
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setStartX(e.touches[0].clientX)
-    setIsDragging(true)
+    setTouchStart(e.targetTouches[0].clientX)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return
-    setCurrentX(e.touches[0].clientX)
+    setTouchEnd(e.targetTouches[0].clientX)
   }
 
   const handleTouchEnd = () => {
-    if (!isDragging) return
+    if (!touchStart || !touchEnd) return
 
-    const diffX = currentX - startX
-    const threshold = 100
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > threshold
+    const isRightSwipe = distance < -threshold
 
-    if (Math.abs(diffX) > threshold) {
-      if (diffX > 0 && onSwipeRight) {
-        onSwipeRight()
-      } else if (diffX < 0 && onSwipeLeft) {
-        onSwipeLeft()
-      }
+    if (isLeftSwipe && onSwipeLeft) {
+      onSwipeLeft()
     }
 
-    setIsDragging(false)
-    setCurrentX(0)
-    setStartX(0)
-  }
+    if (isRightSwipe && onSwipeRight) {
+      onSwipeRight()
+    }
 
-  const translateX = isDragging ? currentX - startX : 0
+    // Reset values
+    setTouchStart(0)
+    setTouchEnd(0)
+  }
 
   return (
     <div
-      ref={cardRef}
-      className={cn("touch-pan-y", className)}
+      className={cn("touch-manipulation", className)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{
-        transform: `translateX(${translateX}px)`,
-        transition: isDragging ? "none" : "transform 0.3s ease",
-      }}
     >
       {children}
     </div>
   )
 }
 
-// Pull-to-refresh component
-interface PullToRefreshProps {
-  onRefresh: () => Promise<void>
-  children: React.ReactNode
+// Long Press Component
+interface LongPressProps {
+  children: ReactNode
+  onLongPress: () => void
+  duration?: number
+  className?: string
 }
 
-export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
+export function LongPress({ children, onLongPress, duration = 500, className }: LongPressProps) {
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const startLongPress = () => {
+    timerRef.current = setTimeout(() => {
+      onLongPress()
+    }, duration)
+  }
+
+  const endLongPress = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+    }
+  }
+
+  return (
+    <div
+      className={cn("touch-manipulation", className)}
+      onTouchStart={startLongPress}
+      onTouchEnd={endLongPress}
+      onTouchCancel={endLongPress}
+      onMouseDown={startLongPress}
+      onMouseUp={endLongPress}
+      onMouseLeave={endLongPress}
+    >
+      {children}
+    </div>
+  )
+}
+
+// Pull to Refresh Component
+interface PullToRefreshProps {
+  children: ReactNode
+  onRefresh: () => Promise<void>
+  threshold?: number
+  className?: string
+}
+
+export function PullToRefresh({ children, onRefresh, threshold = 80, className }: PullToRefreshProps) {
   const [isPulling, setIsPulling] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const startY = useRef(0)
-  const threshold = 80
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY === 0) {
+    // Only enable pull to refresh at the top of the page
+    if (typeof window !== "undefined" && window.scrollY === 0) {
       startY.current = e.touches[0].clientY
+      setIsPulling(true)
     }
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (window.scrollY > 0 || isRefreshing) return
+    if (!isPulling) return
 
     const currentY = e.touches[0].clientY
     const distance = currentY - startY.current
 
+    // Only allow pulling down, not up
     if (distance > 0) {
-      setIsPulling(true)
-      setPullDistance(Math.min(distance, threshold * 1.5))
+      // Apply resistance to make it feel more natural
+      setPullDistance(Math.min(distance * 0.4, threshold * 1.5))
+    } else {
+      setPullDistance(0)
     }
   }
 
   const handleTouchEnd = async () => {
-    if (pullDistance > threshold && !isRefreshing) {
+    if (!isPulling) return
+
+    if (pullDistance > threshold) {
       setIsRefreshing(true)
       try {
         await onRefresh()
@@ -106,75 +145,49 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
         setIsRefreshing(false)
       }
     }
-    setIsPulling(false)
+
     setPullDistance(0)
-  }
-
-  return (
-    <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} className="relative">
-      {/* Pull indicator */}
-      {(isPulling || isRefreshing) && (
-        <div
-          className="absolute top-0 left-0 right-0 flex items-center justify-center bg-forest-50 transition-all duration-300"
-          style={{ height: `${pullDistance}px` }}
-        >
-          <div className="text-forest-600 text-sm font-medium">
-            {isRefreshing ? "Refreshing..." : pullDistance > threshold ? "Release to refresh" : "Pull to refresh"}
-          </div>
-        </div>
-      )}
-
-      <div
-        style={{
-          transform: `translateY(${pullDistance}px)`,
-          transition: isPulling ? "none" : "transform 0.3s ease",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  )
-}
-
-// Long press component for additional actions
-interface LongPressProps {
-  onLongPress: () => void
-  children: React.ReactNode
-  delay?: number
-}
-
-export function LongPress({ onLongPress, children, delay = 500 }: LongPressProps) {
-  const timeoutRef = useRef<NodeJS.Timeout>()
-  const [isPressed, setIsPressed] = useState(false)
-
-  const handleStart = () => {
-    setIsPressed(true)
-    timeoutRef.current = setTimeout(() => {
-      onLongPress()
-      if (navigator.vibrate) {
-        navigator.vibrate(100)
-      }
-    }, delay)
-  }
-
-  const handleEnd = () => {
-    setIsPressed(false)
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
+    setIsPulling(false)
   }
 
   return (
     <div
-      onTouchStart={handleStart}
-      onTouchEnd={handleEnd}
-      onTouchCancel={handleEnd}
-      onMouseDown={handleStart}
-      onMouseUp={handleEnd}
-      onMouseLeave={handleEnd}
-      className={cn("transition-all duration-200", isPressed && "scale-95 opacity-75")}
+      className={cn("relative", className)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
-      {children}
+      {/* Pull indicator */}
+      {pullDistance > 0 && (
+        <div
+          className="absolute left-0 right-0 flex justify-center items-center text-sm text-gray-500"
+          style={{
+            top: -40 + pullDistance,
+            height: 40,
+            opacity: Math.min(pullDistance / threshold, 1),
+          }}
+        >
+          {pullDistance > threshold ? "Release to refresh" : "Pull down to refresh"}
+        </div>
+      )}
+
+      {/* Loading indicator */}
+      {isRefreshing && (
+        <div className="absolute left-0 right-0 top-0 flex justify-center items-center h-10 bg-blue-50">
+          <div className="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+          <span className="ml-2 text-sm text-blue-600">Refreshing...</span>
+        </div>
+      )}
+
+      {/* Content with transform based on pull distance */}
+      <div
+        style={{
+          transform: `translateY(${pullDistance}px)`,
+          transition: isPulling ? "none" : "transform 0.3s ease-out",
+        }}
+      >
+        {children}
+      </div>
     </div>
   )
 }

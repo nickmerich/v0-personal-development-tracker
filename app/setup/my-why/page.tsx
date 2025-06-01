@@ -8,31 +8,66 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowRight, ArrowLeft, Heart, HelpCircle } from "lucide-react"
 import { SetupProgress } from "@/components/setup-progress"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { storage } from "@/lib/storage"
+import { setupManager } from "@/lib/setup-manager"
+import { BackupStatus } from "@/components/backup-status"
 
 export default function MyWhy() {
   const router = useRouter()
   const [myWhy, setMyWhy] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-    if (userData.myWhy) {
+    const userData = storage.getUserData()
+    if (userData?.myWhy) {
       setMyWhy(userData.myWhy)
     }
-  }, [])
 
-  const handleNext = () => {
+    // Check if previous step was completed
+    if (!setupManager.isStepCompleted("personal-info")) {
+      router.push("/setup/personal-info")
+    }
+  }, [router])
+
+  const handleNext = async () => {
     if (!myWhy.trim()) return
 
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-    localStorage.setItem(
-      "userData",
-      JSON.stringify({
-        ...userData,
-        myWhy,
-      }),
-    )
+    setIsLoading(true)
+    setIsSaving(true)
 
-    router.push("/setup/big-goal")
+    try {
+      // Save data
+      const success = storage.updateUserData({ myWhy })
+
+      if (success) {
+        // Mark step as completed
+        setupManager.markStepCompleted("my-why")
+
+        // Navigate to next step
+        router.push("/setup/big-goal")
+      } else {
+        console.error("Failed to save data")
+      }
+    } catch (error) {
+      console.error("Error saving my why:", error)
+    } finally {
+      setIsLoading(false)
+      setIsSaving(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!myWhy.trim()) return
+
+    setIsSaving(true)
+    try {
+      storage.updateUserData({ myWhy })
+    } catch (error) {
+      console.error("Error saving:", error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -62,6 +97,10 @@ export default function MyWhy() {
               </Tooltip>
             </TooltipProvider>
           </div>
+
+          <div className="flex justify-center mt-2">
+            <BackupStatus />
+          </div>
           <CardDescription className="text-center text-stone-600">
             What motivates you to grow and improve? What's your deeper purpose?
           </CardDescription>
@@ -83,7 +122,10 @@ export default function MyWhy() {
               className="min-h-[120px] border-forest-300 focus:border-forest-500 focus:ring-forest-200"
               value={myWhy}
               onChange={(e) => setMyWhy(e.target.value)}
+              onBlur={handleSave}
             />
+
+            {isSaving && <p className="text-sm text-forest-600">Saving...</p>}
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
@@ -91,15 +133,16 @@ export default function MyWhy() {
             variant="outline"
             onClick={() => router.push("/setup/personal-info")}
             className="border-forest-300 text-forest-600 hover:bg-forest-50"
+            disabled={isLoading}
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
           <Button
             onClick={handleNext}
-            disabled={!myWhy.trim()}
+            disabled={!myWhy.trim() || isLoading}
             className="bg-forest-600 text-white hover:bg-forest-700 shadow-lg"
           >
-            Continue <ArrowRight className="ml-2 h-4 w-4" />
+            {isLoading ? "Saving..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>
       </Card>

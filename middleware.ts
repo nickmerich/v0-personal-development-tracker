@@ -1,78 +1,84 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname
+// Paths that don't require authentication
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/signup",
+  "/getting-started",
+  "/api/auth/login",
+  "/api/auth/signup",
+  "/api/auth/me",
+]
 
-  // Skip middleware for static files and API routes
+// Paths that require setup to be completed
+const SETUP_PATHS = [
+  "/setup",
+  "/setup/personal-info",
+  "/setup/my-why",
+  "/setup/big-goal",
+  "/setup/categories",
+  "/setup/calendar-preferences",
+]
+
+// Paths that require authentication
+const AUTH_PATHS = ["/dashboard", "/profile", "/settings", "/calendar", "/templates", "/tasks"]
+
+// Helper function to check if a path starts with any of the given prefixes
+const pathStartsWith = (path: string, prefixes: string[]): boolean => {
+  return prefixes.some((prefix) => path.startsWith(prefix))
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Skip middleware for static assets and API routes (except auth)
   if (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    pathname.includes(".") ||
-    pathname.startsWith("/favicon")
+    pathname.startsWith("/static") ||
+    pathname.startsWith("/images") ||
+    (pathname.startsWith("/api") && !pathname.startsWith("/api/auth"))
   ) {
     return NextResponse.next()
   }
 
-  // Get setup completion status from headers (set by client-side)
-  const setupComplete = request.cookies.get("setupComplete")?.value === "true"
-  const hasUserData = request.cookies.get("hasUserData")?.value === "true"
+  // Check for authentication via cookies
+  const hasSession = request.cookies.has("session")
+  const hasUserData = request.cookies.has("hasUserData")
+  const setupComplete = request.cookies.has("setupComplete")
 
-  // Protect dashboard routes
-  if (pathname.startsWith("/dashboard")) {
-    if (!hasUserData || !setupComplete) {
+  // Public paths are always accessible
+  if (PUBLIC_PATHS.includes(pathname) || pathStartsWith(pathname, ["/api/auth"])) {
+    return NextResponse.next()
+  }
+
+  // Setup paths require user data but not completed setup
+  if (pathStartsWith(pathname, SETUP_PATHS)) {
+    if (!hasUserData) {
+      return NextResponse.redirect(new URL("/getting-started", request.url))
+    }
+    return NextResponse.next()
+  }
+
+  // Auth paths require authentication and completed setup
+  if (pathStartsWith(pathname, AUTH_PATHS)) {
+    if (!hasSession) {
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+
+    if (!setupComplete) {
+      // Redirect to the setup flow
       return NextResponse.redirect(new URL("/setup/personal-info", request.url))
     }
+
+    return NextResponse.next()
   }
 
-  // Protect task routes
-  if (pathname.startsWith("/tasks")) {
-    if (!hasUserData || !setupComplete) {
-      return NextResponse.redirect(new URL("/setup/personal-info", request.url))
-    }
-  }
-
-  // Protect templates routes
-  if (pathname.startsWith("/templates")) {
-    if (!hasUserData || !setupComplete) {
-      return NextResponse.redirect(new URL("/setup/personal-info", request.url))
-    }
-  }
-
-  // Protect settings routes
-  if (pathname.startsWith("/settings")) {
-    if (!hasUserData || !setupComplete) {
-      return NextResponse.redirect(new URL("/setup/personal-info", request.url))
-    }
-  }
-
-  // Redirect from setup pages if already completed
-  if (pathname.startsWith("/setup") && setupComplete && hasUserData) {
-    return NextResponse.redirect(new URL("/dashboard", request.url))
-  }
-
-  // Redirect root to appropriate page
-  if (pathname === "/") {
-    if (hasUserData && setupComplete) {
-      return NextResponse.redirect(new URL("/dashboard", request.url))
-    } else if (hasUserData && !setupComplete) {
-      return NextResponse.redirect(new URL("/setup/personal-info", request.url))
-    }
-    // Stay on landing page if no user data
-  }
-
+  // Default: allow access
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!api/health|_next/static|_next/image|favicon.ico).*)"],
 }

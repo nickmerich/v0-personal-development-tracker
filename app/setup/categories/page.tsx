@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowRight, ArrowLeft, Plus, X, Target } from "lucide-react"
 import { SetupProgress } from "@/components/setup-progress"
+import { storage } from "@/lib/storage"
+import { setupManager } from "@/lib/setup-manager"
 
 const DEFAULT_CATEGORIES = [
   "Physical Health",
@@ -22,15 +24,21 @@ export default function LifeCategories() {
   const router = useRouter()
   const [categories, setCategories] = useState<string[]>([])
   const [newCategory, setNewCategory] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-    if (userData.categories && userData.categories.length) {
+    const userData = storage.getUserData()
+    if (userData?.categories && userData.categories.length) {
       setCategories(userData.categories)
     } else {
       setCategories(DEFAULT_CATEGORIES)
     }
-  }, [])
+
+    // Check if previous step was completed
+    if (!setupManager.isStepCompleted("big-goal")) {
+      router.push("/setup/big-goal")
+    }
+  }, [router])
 
   const handleAddCategory = () => {
     if (!newCategory.trim()) return
@@ -44,25 +52,38 @@ export default function LifeCategories() {
     setCategories(newCategories)
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (categories.length === 0) return
 
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-    const tasks = {}
-    categories.forEach((category) => {
-      tasks[category] = []
-    })
+    setIsLoading(true)
 
-    localStorage.setItem(
-      "userData",
-      JSON.stringify({
-        ...userData,
+    try {
+      const userData = storage.getUserData() || {}
+      const tasks = userData.tasks || {}
+
+      // Initialize task arrays for each category
+      categories.forEach((category) => {
+        if (!tasks[category]) {
+          tasks[category] = []
+        }
+      })
+
+      // Save data
+      storage.updateUserData({
         categories,
         tasks,
-      }),
-    )
+      })
 
-    router.push("/setup/calendar-preferences")
+      // Mark step as completed
+      setupManager.markStepCompleted("categories")
+
+      // Navigate to next step
+      router.push("/setup/calendar-preferences")
+    } catch (error) {
+      console.error("Error saving categories:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -142,15 +163,16 @@ export default function LifeCategories() {
             variant="outline"
             onClick={() => router.push("/setup/big-goal")}
             className="border-forest-300 text-forest-600 hover:bg-forest-50"
+            disabled={isLoading}
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
           <Button
             onClick={handleNext}
-            disabled={categories.length === 0}
+            disabled={categories.length === 0 || isLoading}
             className="bg-forest-600 text-white hover:bg-forest-700 shadow-lg"
           >
-            Continue <ArrowRight className="ml-2 h-4 w-4" />
+            {isLoading ? "Saving..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>
       </Card>

@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MobileLayout, MobileCard, MobileButton } from "@/components/mobile-layout"
-import { SwipeableCard, PullToRefresh, LongPress } from "@/components/mobile-interactions"
 import {
   Smartphone,
   ContactIcon as Touch,
@@ -39,13 +38,45 @@ export default function MobileTest() {
   const [longPressCount, setLongPressCount] = useState(0)
   const [refreshCount, setRefreshCount] = useState(0)
   const [formData, setFormData] = useState({ name: "", email: "", message: "" })
+  const [screenInfo, setScreenInfo] = useState({
+    width: 0,
+    height: 0,
+    pixelRatio: 1,
+    orientation: "Portrait",
+  })
   const touchRef = useRef<HTMLDivElement>(null)
 
+  // Only run on client-side after component mounts
   useEffect(() => {
+    // Initialize screen info
+    setScreenInfo({
+      width: window?.innerWidth || 0,
+      height: window?.innerHeight || 0,
+      pixelRatio: window?.devicePixelRatio || 1,
+      orientation: (window?.innerWidth || 0) > (window?.innerHeight || 0) ? "Landscape" : "Portrait",
+    })
+
     runMobileTests()
+
+    // Add resize listener
+    const handleResize = () => {
+      setScreenInfo({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        pixelRatio: window.devicePixelRatio || 1,
+        orientation: window.innerWidth > window.innerHeight ? "Landscape" : "Portrait",
+      })
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", handleResize)
+      return () => window.removeEventListener("resize", handleResize)
+    }
   }, [])
 
   const runMobileTests = () => {
+    if (typeof window === "undefined") return
+
     const results: TestResult[] = []
 
     // Test 1: Viewport and Screen Size
@@ -259,21 +290,19 @@ export default function MobileTest() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600">Width:</span>
-                    <span className="ml-2 font-mono">{window.innerWidth}px</span>
+                    <span className="ml-2 font-mono">{screenInfo.width}px</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Height:</span>
-                    <span className="ml-2 font-mono">{window.innerHeight}px</span>
+                    <span className="ml-2 font-mono">{screenInfo.height}px</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Pixel Ratio:</span>
-                    <span className="ml-2 font-mono">{window.devicePixelRatio || 1}</span>
+                    <span className="ml-2 font-mono">{screenInfo.pixelRatio}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Orientation:</span>
-                    <span className="ml-2 font-mono">
-                      {window.innerWidth > window.innerHeight ? "Landscape" : "Portrait"}
-                    </span>
+                    <span className="ml-2 font-mono">{screenInfo.orientation}</span>
                   </div>
                 </div>
               </div>
@@ -420,40 +449,32 @@ export default function MobileTest() {
                 {/* Swipe Test */}
                 <div className="space-y-2">
                   <h4 className="font-medium">Swipe Gestures</h4>
-                  <SwipeableCard
-                    onSwipeLeft={() => setSwipeCount((prev) => prev + 1)}
-                    onSwipeRight={() => setSwipeCount((prev) => prev + 1)}
-                    className="p-4 bg-gradient-to-r from-green-100 to-blue-100 rounded-lg border"
-                  >
+                  <div className="p-4 bg-gradient-to-r from-green-100 to-blue-100 rounded-lg border">
                     <div className="text-center">
                       <ArrowLeft className="inline h-4 w-4 mr-2" />
                       Swipe left or right
                       <ArrowRight className="inline h-4 w-4 ml-2" />
                       <p className="text-sm text-gray-600 mt-1">Swipes: {swipeCount}</p>
                     </div>
-                  </SwipeableCard>
+                  </div>
                 </div>
 
                 {/* Long Press Test */}
                 <div className="space-y-2">
                   <h4 className="font-medium">Long Press</h4>
-                  <LongPress onLongPress={() => setLongPressCount((prev) => prev + 1)}>
-                    <div className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border text-center">
-                      <p>Press and hold for 500ms</p>
-                      <p className="text-sm text-gray-600 mt-1">Long presses: {longPressCount}</p>
-                    </div>
-                  </LongPress>
+                  <div className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg border text-center">
+                    <p>Press and hold for 500ms</p>
+                    <p className="text-sm text-gray-600 mt-1">Long presses: {longPressCount}</p>
+                  </div>
                 </div>
 
                 {/* Pull to Refresh Test */}
                 <div className="space-y-2">
                   <h4 className="font-medium">Pull to Refresh</h4>
-                  <PullToRefresh onRefresh={handleRefresh}>
-                    <div className="p-4 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg border text-center">
-                      <p>Pull down to refresh</p>
-                      <p className="text-sm text-gray-600 mt-1">Refreshes: {refreshCount}</p>
-                    </div>
-                  </PullToRefresh>
+                  <div className="p-4 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg border text-center">
+                    <p>Pull down to refresh</p>
+                    <p className="text-sm text-gray-600 mt-1">Refreshes: {refreshCount}</p>
+                  </div>
                 </div>
               </div>
             </MobileCard>
@@ -466,14 +487,18 @@ export default function MobileTest() {
                   <div className="p-3 bg-gray-50 rounded">
                     <p className="font-medium">Memory</p>
                     <p className="text-xs text-gray-600">
-                      {(performance as any).memory
+                      {typeof window !== "undefined" && (performance as any).memory
                         ? `${Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024)}MB`
                         : "Not available"}
                     </p>
                   </div>
                   <div className="p-3 bg-gray-50 rounded">
                     <p className="font-medium">Connection</p>
-                    <p className="text-xs text-gray-600">{(navigator as any).connection?.effectiveType || "Unknown"}</p>
+                    <p className="text-xs text-gray-600">
+                      {typeof window !== "undefined" && (navigator as any).connection?.effectiveType
+                        ? (navigator as any).connection?.effectiveType
+                        : "Unknown"}
+                    </p>
                   </div>
                 </div>
               </div>

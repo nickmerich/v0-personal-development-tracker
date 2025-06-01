@@ -8,39 +8,50 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowRight, Mountain } from "lucide-react"
 import { SetupProgress } from "@/components/setup-progress"
+import { storage } from "@/lib/storage"
+import { setupManager } from "@/lib/setup-manager"
 
 export default function PersonalInfo() {
   const router = useRouter()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [startDate, setStartDate] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     // Set default start date to today
     setStartDate(new Date().toISOString().split("T")[0])
 
     // Load existing data if available
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-    if (userData.name) setName(userData.name)
-    if (userData.email) setEmail(userData.email)
-    if (userData.startDate) setStartDate(userData.startDate)
+    const userData = storage.getUserData()
+    if (userData?.name) setName(userData.name)
+    if (userData?.email) setEmail(userData.email)
+    if (userData?.startDate) setStartDate(userData.startDate)
   }, [])
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!name.trim() || !startDate) return
 
-    const userData = JSON.parse(localStorage.getItem("userData") || "{}")
-    localStorage.setItem(
-      "userData",
-      JSON.stringify({
-        ...userData,
+    setIsLoading(true)
+
+    try {
+      // Save data
+      storage.updateUserData({
         name,
         email,
         startDate,
-      }),
-    )
+      })
 
-    router.push("/setup/my-why")
+      // Mark step as completed
+      setupManager.markStepCompleted("personal-info")
+
+      // Navigate to next step
+      router.push("/setup/my-why")
+    } catch (error) {
+      console.error("Error saving personal info:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -102,10 +113,10 @@ export default function PersonalInfo() {
         <CardFooter>
           <Button
             onClick={handleNext}
-            disabled={!name.trim() || !startDate}
+            disabled={!name.trim() || !startDate || isLoading}
             className="w-full bg-forest-600 text-white hover:bg-forest-700 shadow-lg"
           >
-            Continue <ArrowRight className="ml-2 h-4 w-4" />
+            {isLoading ? "Saving..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </CardFooter>
       </Card>
