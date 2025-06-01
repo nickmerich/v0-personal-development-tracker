@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useAppStore } from "@/lib/store"
-import { useAuth } from "@/lib/auth"
+import { useAuth } from "@/lib/auth-service"
 import { MOUNTAIN_COPY, getDaysSinceStart } from "@/lib/mountain-copy"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardHeader } from "@/components/dashboard-header"

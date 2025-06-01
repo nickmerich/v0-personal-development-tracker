@@ -288,7 +288,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const contextValue = {
-    ...authState,
+    user: authState.user,
+    isAuthenticated: authState.isAuthenticated,
+    isLoading: authState.isLoading,
+    error: authState.error,
     signIn,
     signUp,
     signOut,
