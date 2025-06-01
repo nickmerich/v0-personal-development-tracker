@@ -19,8 +19,7 @@ export interface AuthState {
   error: string | null
 }
 
-// Create a context for authentication
-const AuthContext = createContext<{
+interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   isLoading: boolean
@@ -29,7 +28,10 @@ const AuthContext = createContext<{
   signUp: (email: string, name: string) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<boolean>
   clearError: () => void
-}>({
+}
+
+// Create a context for authentication
+const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -287,7 +289,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthState({ ...authState, error: null })
   }
 
-  const contextValue = {
+  // Create the context value object
+  const value: AuthContextType = {
     user: authState.user,
     isAuthenticated: authState.isAuthenticated,
     isLoading: authState.isLoading,
@@ -298,7 +301,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearError,
   }
 
-  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 // Hook for using auth in components
