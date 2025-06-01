@@ -1,45 +1,43 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
-import { cookies } from "next/headers"
-
-const sql = neon(process.env.NEON_NEON_DATABASE_URL!)
+import { sql } from "@/lib/database"
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies()
-    const sessionToken = cookieStore.get("session_token")?.value
+    // Get session token from cookies
+    const sessionToken = request.cookies.get("session_token")?.value
 
     if (!sessionToken) {
-      return NextResponse.json({ user: null })
+      return NextResponse.json({ user: null }, { status: 200 })
     }
 
-    // Verify session and get user
+    // Check if session exists and is valid
     const sessions = await sql`
       SELECT u.id, u.email, u.name, u.created_at, s.expires_at
-      FROM user_sessions s
-      JOIN users u ON s.user_id = u.id
-      WHERE s.session_token = ${sessionToken} AND s.expires_at > NOW() AND u.is_active = true
+      FROM users u
+      JOIN user_sessions s ON u.id = s.user_id
+      WHERE s.session_token = ${sessionToken}
+      AND s.expires_at > NOW()
     `
 
     if (sessions.length === 0) {
-      // Invalid or expired session
-      cookieStore.delete("session_token")
-      return NextResponse.json({ user: null })
+      // Session expired or invalid
+      const response = NextResponse.json({ user: null }, { status: 200 })
+      response.cookies.delete("session_token")
+      return response
     }
 
-    const session = sessions[0]
-
+    const user = sessions[0]
     return NextResponse.json({
       user: {
-        id: session.id,
-        email: session.email,
-        name: session.name,
-        createdAt: session.created_at,
+        id: user.id.toString(),
+        email: user.email,
+        name: user.name,
+        createdAt: user.created_at,
         hasCloudBackup: true,
       },
     })
   } catch (error) {
     console.error("Auth check error:", error)
-    return NextResponse.json({ user: null })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

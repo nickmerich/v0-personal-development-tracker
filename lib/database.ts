@@ -1,10 +1,12 @@
 import { neon } from "@neondatabase/serverless"
 
-// Update the database URL to use the correct environment variable
-const sql = neon(process.env.NEON_NEON_DATABASE_URL!)
+// Use the correct environment variable name
+const sql = neon(process.env.NEON_NEON_DATABASE_URL || process.env.DATABASE_URL || "")
+
+export { sql }
 
 export interface User {
-  id: string
+  id: number
   email: string
   name: string
   created_at: string
@@ -12,21 +14,10 @@ export interface User {
 }
 
 export interface UserData {
-  id: string
-  user_id: string
-  start_date?: string
-  my_why?: string
-  big_goal?: string
-  categories: string[]
-  tasks: Record<string, any[]>
-  milestones: any[]
-  journal_entries: Record<string, any>
-  affirmations: string[]
-  gamification: any
-  applied_templates: any[]
-  notification_settings: any
-  calendar_preferences: any
-  setup_completed: boolean
+  id: number
+  user_id: number
+  data_key: string
+  data_value: Record<string, any>
   created_at: string
   updated_at: string
 }
@@ -38,46 +29,35 @@ export class DatabaseService {
       // Create users table
       await sql`
         CREATE TABLE IF NOT EXISTS users (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          id SERIAL PRIMARY KEY,
           email VARCHAR(255) UNIQUE NOT NULL,
           name VARCHAR(255) NOT NULL,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `
 
       // Create user_data table
       await sql`
         CREATE TABLE IF NOT EXISTS user_data (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-          start_date DATE,
-          my_why TEXT,
-          big_goal TEXT,
-          categories JSONB DEFAULT '[]'::jsonb,
-          tasks JSONB DEFAULT '{}'::jsonb,
-          milestones JSONB DEFAULT '[]'::jsonb,
-          journal_entries JSONB DEFAULT '{}'::jsonb,
-          affirmations JSONB DEFAULT '[]'::jsonb,
-          gamification JSONB DEFAULT '{}'::jsonb,
-          applied_templates JSONB DEFAULT '[]'::jsonb,
-          notification_settings JSONB DEFAULT '{}'::jsonb,
-          calendar_preferences JSONB DEFAULT '{}'::jsonb,
-          setup_completed BOOLEAN DEFAULT FALSE,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          UNIQUE(user_id)
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          data_key VARCHAR(255) NOT NULL,
+          data_value JSONB,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, data_key)
         )
       `
 
-      // Create sessions table
+      // Create user_sessions table
       await sql`
         CREATE TABLE IF NOT EXISTS user_sessions (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
           session_token VARCHAR(255) UNIQUE NOT NULL,
-          expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `
 
@@ -146,7 +126,7 @@ export class DatabaseService {
     }
   }
 
-  static async getUserById(userId: string): Promise<User | null> {
+  static async getUserById(userId: number): Promise<User | null> {
     try {
       const result = await sql`
         SELECT * FROM users WHERE id = ${userId}
@@ -159,7 +139,7 @@ export class DatabaseService {
   }
 
   // User data management
-  static async saveUserData(userId: string, userData: Partial<UserData>): Promise<boolean> {
+  static async saveUserData(userId: number, userData: Partial<UserData>): Promise<boolean> {
     try {
       // Check if user data exists
       const existing = await sql`
@@ -168,47 +148,27 @@ export class DatabaseService {
 
       if (existing.length > 0) {
         // Update existing data
-        await sql`
-          UPDATE user_data SET
-            start_date = ${userData.start_date || null},
-            my_why = ${userData.my_why || null},
-            big_goal = ${userData.big_goal || null},
-            categories = ${JSON.stringify(userData.categories || [])},
-            tasks = ${JSON.stringify(userData.tasks || {})},
-            milestones = ${JSON.stringify(userData.milestones || [])},
-            journal_entries = ${JSON.stringify(userData.journal_entries || {})},
-            affirmations = ${JSON.stringify(userData.affirmations || [])},
-            gamification = ${JSON.stringify(userData.gamification || {})},
-            applied_templates = ${JSON.stringify(userData.applied_templates || [])},
-            notification_settings = ${JSON.stringify(userData.notification_settings || {})},
-            calendar_preferences = ${JSON.stringify(userData.calendar_preferences || {})},
-            setup_completed = ${userData.setup_completed || false}
-          WHERE user_id = ${userId}
-        `
+        for (const key in userData) {
+          if (userData.hasOwnProperty(key)) {
+            await sql`
+              INSERT INTO user_data (user_id, data_key, data_value)
+              VALUES (${userId}, ${key}, ${JSON.stringify(userData[key])})
+              ON CONFLICT (user_id, data_key) DO UPDATE SET
+                data_value = EXCLUDED.data_value,
+                updated_at = NOW()
+            `
+          }
+        }
       } else {
         // Insert new data
-        await sql`
-          INSERT INTO user_data (
-            user_id, start_date, my_why, big_goal, categories, tasks, milestones,
-            journal_entries, affirmations, gamification, applied_templates,
-            notification_settings, calendar_preferences, setup_completed
-          ) VALUES (
-            ${userId},
-            ${userData.start_date || null},
-            ${userData.my_why || null},
-            ${userData.big_goal || null},
-            ${JSON.stringify(userData.categories || [])},
-            ${JSON.stringify(userData.tasks || {})},
-            ${JSON.stringify(userData.milestones || [])},
-            ${JSON.stringify(userData.journal_entries || {})},
-            ${JSON.stringify(userData.affirmations || [])},
-            ${JSON.stringify(userData.gamification || {})},
-            ${JSON.stringify(userData.applied_templates || [])},
-            ${JSON.stringify(userData.notification_settings || {})},
-            ${JSON.stringify(userData.calendar_preferences || {})},
-            ${userData.setup_completed || false}
-          )
-        `
+        for (const key in userData) {
+          if (userData.hasOwnProperty(key)) {
+            await sql`
+              INSERT INTO user_data (user_id, data_key, data_value)
+              VALUES (${userId}, ${key}, ${JSON.stringify(userData[key])})
+            `
+          }
+        }
       }
 
       return true
@@ -218,7 +178,7 @@ export class DatabaseService {
     }
   }
 
-  static async getUserData(userId: string): Promise<UserData | null> {
+  static async getUserData(userId: number): Promise<UserData | null> {
     try {
       const result = await sql`
         SELECT * FROM user_data WHERE user_id = ${userId}
@@ -226,18 +186,20 @@ export class DatabaseService {
 
       if (result.length === 0) return null
 
-      const data = result[0]
+      const data = result.reduce(
+        (acc, curr) => {
+          acc[curr.data_key] = curr.data_value
+          return acc
+        },
+        {} as Record<string, any>,
+      )
+
       return {
+        id: result[0].id,
+        user_id: result[0].user_id,
         ...data,
-        categories: data.categories || [],
-        tasks: data.tasks || {},
-        milestones: data.milestones || [],
-        journal_entries: data.journal_entries || {},
-        affirmations: data.affirmations || [],
-        gamification: data.gamification || {},
-        applied_templates: data.applied_templates || [],
-        notification_settings: data.notification_settings || {},
-        calendar_preferences: data.calendar_preferences || {},
+        created_at: result[0].created_at,
+        updated_at: result[0].updated_at,
       } as UserData
     } catch (error) {
       console.error("Error getting user data:", error)
@@ -246,7 +208,7 @@ export class DatabaseService {
   }
 
   // Session management
-  static async createSession(userId: string, sessionToken: string, expiresAt: Date): Promise<boolean> {
+  static async createSession(userId: number, sessionToken: string, expiresAt: Date): Promise<boolean> {
     try {
       await sql`
         INSERT INTO user_sessions (user_id, session_token, expires_at)
@@ -296,5 +258,15 @@ export class DatabaseService {
       console.error("Error cleaning up expired sessions:", error)
       return false
     }
+  }
+}
+
+export async function testConnection() {
+  try {
+    const result = await sql`SELECT 1 as test`
+    return { success: true, result }
+  } catch (error) {
+    console.error("Database connection error:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" }
   }
 }

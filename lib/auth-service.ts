@@ -287,19 +287,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthState({ ...authState, error: null })
   }
 
-  return (
-    <AuthContext.Provider
-      value={{
-        ...authState,
-        signIn,
-        signUp,
-        signOut,
-        clearError,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
+  const contextValue = {
+    ...authState,
+    signIn,
+    signUp,
+    signOut,
+    clearError,
+  }
+
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
 }
 
 // Hook for using auth in components
