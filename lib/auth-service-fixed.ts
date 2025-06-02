@@ -17,7 +17,7 @@ export interface AuthState {
   error: string | null
 }
 
-// Simple auth functions without React context for now
+// Simple auth functions without React context
 export const authService = {
   // Check if user is authenticated
   isAuthenticated: (): boolean => {
@@ -47,12 +47,8 @@ export const authService = {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Cache user data
         storage.set("cachedUser", result.user)
-
-        // Sync data after sign in
         await storage.syncData()
-
         return { success: true }
       } else {
         return { success: false, error: result.error || "Sign in failed" }
@@ -77,12 +73,8 @@ export const authService = {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Cache user data
         storage.set("cachedUser", result.user)
-
-        // Migrate local data to cloud
         await authService.migrateLocalDataToCloud()
-
         return { success: true }
       } else {
         return { success: false, error: result.error || "Sign up failed" }
@@ -101,11 +93,9 @@ export const authService = {
       })
 
       if (response.ok) {
-        // Remove cached user
         storage.remove("cachedUser")
         return true
       }
-
       return false
     } catch (error) {
       console.error("Error during sign out:", error)
@@ -118,7 +108,7 @@ export const authService = {
     try {
       const localData = storage.getUserData()
       if (!localData || Object.keys(localData).length === 0) {
-        return true // No data to migrate
+        return true
       }
 
       const response = await fetch("/api/data/migrate", {

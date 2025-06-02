@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Cloud, Shield, Smartphone, X } from "lucide-react"
-import { useAuth } from "@/lib/auth-service"
+import { authService } from "@/lib/auth-service"
 
 interface AuthModalProps {
   isOpen: boolean
@@ -24,19 +23,34 @@ export function AuthModal({ isOpen, onClose, onSuccess, title, description }: Au
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
   const [activeTab, setActiveTab] = useState("signin")
-  const { signUp, signIn, isLoading, error, clearError } = useAuth()
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   if (!isOpen) return null
+
+  const clearError = () => setError(null)
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim()) return
 
-    const result = await signIn(email.trim())
-    if (result.success) {
-      onSuccess?.()
-      onClose()
-      setEmail("")
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const result = await authService.signIn(email.trim(), name || "User")
+      if (result.success) {
+        onSuccess?.()
+        onClose()
+        setEmail("")
+        setName("")
+      } else {
+        setError(result.error || "Sign in failed")
+      }
+    } catch (err) {
+      setError("Network error during sign in")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -44,12 +58,23 @@ export function AuthModal({ isOpen, onClose, onSuccess, title, description }: Au
     e.preventDefault()
     if (!email.trim() || !name.trim()) return
 
-    const result = await signUp(email.trim(), name.trim())
-    if (result.success) {
-      onSuccess?.()
-      onClose()
-      setEmail("")
-      setName("")
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const result = await authService.signUp(email.trim(), name.trim())
+      if (result.success) {
+        onSuccess?.()
+        onClose()
+        setEmail("")
+        setName("")
+      } else {
+        setError(result.error || "Sign up failed")
+      }
+    } catch (err) {
+      setError("Network error during sign up")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -74,31 +99,31 @@ export function AuthModal({ isOpen, onClose, onSuccess, title, description }: Au
             <X className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-2 mb-2">
-            <div className="p-2 bg-forest-100 rounded-lg">
-              <Cloud className="h-5 w-5 text-forest-600" />
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Cloud className="h-5 w-5 text-green-600" />
             </div>
-            <CardTitle className="text-xl text-forest-800">{title || "Save Your Progress"}</CardTitle>
+            <CardTitle className="text-xl text-gray-800">{title || "Save Your Progress"}</CardTitle>
           </div>
-          <CardDescription className="text-stone-600">
+          <CardDescription className="text-gray-600">
             {description || "Sign in to backup your data and sync across devices"}
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           {/* Benefits Section */}
-          <div className="mb-6 p-4 bg-forest-50 rounded-lg border border-forest-200">
-            <h4 className="font-medium text-forest-800 mb-3">Why sign in?</h4>
-            <div className="space-y-2 text-sm text-stone-600">
+          <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <h4 className="font-medium text-gray-800 mb-3">Why sign in?</h4>
+            <div className="space-y-2 text-sm text-gray-600">
               <div className="flex items-center gap-2">
-                <Cloud className="h-4 w-4 text-forest-600" />
+                <Cloud className="h-4 w-4 text-green-600" />
                 <span>Automatic cloud backup</span>
               </div>
               <div className="flex items-center gap-2">
-                <Smartphone className="h-4 w-4 text-forest-600" />
+                <Smartphone className="h-4 w-4 text-green-600" />
                 <span>Sync across all devices</span>
               </div>
               <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-forest-600" />
+                <Shield className="h-4 w-4 text-green-600" />
                 <span>Never lose your progress</span>
               </div>
             </div>
@@ -128,12 +153,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, title, description }: Au
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={isLoading}
-                    className="border-forest-300 focus:border-forest-500"
+                    className="border-green-300 focus:border-green-500"
                   />
                 </div>
                 <Button
                   type="submit"
-                  className="w-full bg-forest-600 hover:bg-forest-700"
+                  className="w-full bg-green-600 hover:bg-green-700"
                   disabled={isLoading || !email.trim()}
                 >
                   {isLoading ? (
@@ -146,7 +171,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, title, description }: Au
                   )}
                 </Button>
               </form>
-              <p className="text-xs text-stone-500 text-center">No password needed - we'll send you a secure link</p>
+              <p className="text-xs text-gray-500 text-center">No password needed - we'll send you a secure link</p>
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4">
@@ -161,7 +186,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, title, description }: Au
                     onChange={(e) => setName(e.target.value)}
                     required
                     disabled={isLoading}
-                    className="border-forest-300 focus:border-forest-500"
+                    className="border-green-300 focus:border-green-500"
                   />
                 </div>
                 <div>
@@ -174,12 +199,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, title, description }: Au
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={isLoading}
-                    className="border-forest-300 focus:border-forest-500"
+                    className="border-green-300 focus:border-green-500"
                   />
                 </div>
                 <Button
                   type="submit"
-                  className="w-full bg-forest-600 hover:bg-forest-700"
+                  className="w-full bg-green-600 hover:bg-green-700"
                   disabled={isLoading || !email.trim() || !name.trim()}
                 >
                   {isLoading ? (
@@ -192,7 +217,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, title, description }: Au
                   )}
                 </Button>
               </form>
-              <p className="text-xs text-stone-500 text-center">Your local data will be automatically backed up</p>
+              <p className="text-xs text-gray-500 text-center">Your local data will be automatically backed up</p>
             </TabsContent>
           </Tabs>
         </CardContent>

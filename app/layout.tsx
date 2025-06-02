@@ -5,7 +5,8 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { NotificationProvider } from "@/components/notification-provider"
 import { TourProvider } from "@/components/tour-provider"
-import { OptimizedAppInitializer } from "@/components/optimized-app-initializer"
+import { CleanAppInitializer } from "@/components/clean-app-initializer"
+import { SimpleAuthProvider } from "@/components/simple-auth-provider"
 import { ErrorBoundary } from "@/components/error-boundary"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -43,11 +44,13 @@ export default function RootLayout({
       <body className={inter.className} suppressHydrationWarning>
         <ErrorBoundary>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-            <NotificationProvider>
-              <TourProvider>
-                <OptimizedAppInitializer>{children}</OptimizedAppInitializer>
-              </TourProvider>
-            </NotificationProvider>
+            <SimpleAuthProvider>
+              <NotificationProvider>
+                <TourProvider>
+                  <CleanAppInitializer>{children}</CleanAppInitializer>
+                </TourProvider>
+              </NotificationProvider>
+            </SimpleAuthProvider>
           </ThemeProvider>
         </ErrorBoundary>
       </body>

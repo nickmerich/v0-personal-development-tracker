@@ -1,177 +1,64 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
-import { HybridDataService } from "@/lib/hybrid-data-service"
-import { PerformanceMonitor } from "@/lib/performance-monitor"
-import { useAppStore } from "@/lib/store"
 import { LoadingSpinner } from "@/components/loading-spinner"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { AlertCircle, Database, HardDrive } from "lucide-react"
+import { authService } from "@/lib/auth-service"
 
-interface InitializationState {
-  phase: "initializing" | "database" | "data" | "complete" | "error"
-  message: string
-  progress: number
-  error?: string
-  serviceStatus?: any
+interface OptimizedAppInitializerProps {
+  children: React.ReactNode
 }
 
-export function OptimizedAppInitializer({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<InitializationState>({
-    phase: "initializing",
-    message: "Starting your journey...",
-    progress: 0,
-  })
-
-  const { setUserData, setLoading, setError } = useAppStore()
+export function OptimizedAppInitializer({ children }: OptimizedAppInitializerProps) {
+  const [isReady, setIsReady] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // Initialize auth service
+        await authService.initialize()
+
+        // Short delay to ensure everything is loaded
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        setIsReady(true)
+      } catch (err) {
+        console.error("App initialization error:", err)
+        setError("Failed to initialize application")
+      }
+    }
+
     initializeApp()
   }, [])
 
-  const initializeApp = async () => {
-    const endTiming = PerformanceMonitor.startTiming("app-initialization")
-
-    try {
-      // Phase 1: Initialize services
-      setState({
-        phase: "initializing",
-        message: "Initializing services...",
-        progress: 10,
-      })
-
-      await new Promise((resolve) => setTimeout(resolve, 100)) // Prevent flash
-
-      // Phase 2: Database setup
-      setState({
-        phase: "database",
-        message: "Connecting to database...",
-        progress: 30,
-      })
-
-      await HybridDataService.initialize()
-      const serviceStatus = HybridDataService.getStatus()
-
-      // Phase 3: Load user data
-      setState({
-        phase: "data",
-        message: "Loading your data...",
-        progress: 60,
-      })
-
-      const { data, mode } = await HybridDataService.loadUserData()
-
-      if (data) {
-        setUserData(data)
-      }
-
-      // Phase 4: Complete
-      setState({
-        phase: "complete",
-        message: `Ready! Running in ${mode} mode`,
-        progress: 100,
-        serviceStatus,
-      })
-
-      setLoading(false)
-      endTiming()
-
-      // Auto-hide after success
-      setTimeout(() => {
-        setState((prev) => ({ ...prev, phase: "complete" }))
-      }, 1000)
-    } catch (error) {
-      console.error("App initialization failed:", error)
-
-      setState({
-        phase: "error",
-        message: "Initialization failed",
-        progress: 0,
-        error: error instanceof Error ? error.message : "Unknown error",
-      })
-
-      setError("Failed to initialize app")
-      endTiming()
-    }
-  }
-
-  const retryInitialization = () => {
-    setState({
-      phase: "initializing",
-      message: "Retrying...",
-      progress: 0,
-    })
-    initializeApp()
-  }
-
-  // Show loading screen during initialization
-  if (state.phase !== "complete") {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center space-y-6">
-            {/* Logo */}
-            <div className="text-4xl font-bold text-green-700">🏔️ The Gryt</div>
-
-            {/* Loading indicator */}
-            {state.phase !== "error" ? (
-              <LoadingSpinner size="lg" />
-            ) : (
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-            )}
-
-            {/* Progress bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${state.progress}%` }}
-              />
-            </div>
-
-            {/* Status message */}
-            <div className="space-y-2">
-              <p className="text-lg font-medium text-gray-800">{state.message}</p>
-
-              {state.phase === "complete" && state.serviceStatus && (
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                  {state.serviceStatus.databaseAvailable ? (
-                    <>
-                      <Database className="w-4 h-4" /> Cloud sync enabled
-                    </>
-                  ) : (
-                    <>
-                      <HardDrive className="w-4 h-4" /> Local storage mode
-                    </>
-                  )}
-                </div>
-              )}
-
-              {state.error && <div className="text-red-600 text-sm">{state.error}</div>}
-            </div>
-
-            {/* Retry button for errors */}
-            {state.phase === "error" && (
-              <Button onClick={retryInitialization} className="w-full">
-                Try Again
-              </Button>
-            )}
-
-            {/* Performance info in development */}
-            {process.env.NODE_ENV === "development" && (
-              <details className="text-xs text-gray-500">
-                <summary>Performance Info</summary>
-                <pre className="mt-2 text-left">{PerformanceMonitor.getReport()}</pre>
-              </details>
-            )}
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="text-center space-y-4 max-w-md mx-auto p-6">
+          <div className="text-red-600 text-xl font-semibold">Initialization Error</div>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     )
   }
 
-  // App is ready, render children
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-green-700 font-medium">🏔️ Preparing your mountain journey...</p>
+        </div>
+      </div>
+    )
+  }
+
   return <>{children}</>
 }

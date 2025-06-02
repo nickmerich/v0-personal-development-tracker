@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
 import { storage } from "@/lib/storage"
 
 export interface User {
@@ -12,299 +10,147 @@ export interface User {
   hasCloudBackup: boolean
 }
 
-export interface AuthState {
-  user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  error: string | null
+export interface AuthResult {
+  success: boolean
+  error?: string
+  user?: User
 }
 
-interface AuthContextType {
-  user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  error: string | null
-  signIn: (email: string, name: string) => Promise<{ success: boolean; error?: string }>
-  signUp: (email: string, name: string) => Promise<{ success: boolean; error?: string }>
-  signOut: () => Promise<boolean>
-  clearError: () => void
-}
+// Simple auth service class
+class AuthServiceClass {
+  private currentUser: User | null = null
+  private loading = false
+  private error: string | null = null
 
-// Create a context for authentication
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-  error: null,
-  signIn: async () => ({ success: false, error: "Not implemented" }),
-  signUp: async () => ({ success: false, error: "Not implemented" }),
-  signOut: async () => false,
-  clearError: () => {},
-})
+  // Initialize auth service
+  async initialize(): Promise<void> {
+    if (typeof window === "undefined") return
 
-// Auth Provider component
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isAuthenticated: false,
-    isLoading: true,
-    error: null,
-  })
-
-  // Check for existing session on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // First check localStorage for faster initial load
-        const cachedUser = storage.get("cachedUser")
-        if (cachedUser) {
-          setAuthState({
-            user: cachedUser,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          })
-        }
-
-        // Then verify with server
-        const response = await fetch("/api/auth/me", {
-          credentials: "include",
-          headers: {
-            "Cache-Control": "no-cache",
-          },
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          if (result.user) {
-            // Update with server data
-            setAuthState({
-              user: result.user,
-              isAuthenticated: true,
-              isLoading: false,
-              error: null,
-            })
-            // Cache user data
-            storage.set("cachedUser", result.user)
-          } else {
-            // No user found on server
-            setAuthState({
-              user: null,
-              isAuthenticated: false,
-              isLoading: false,
-              error: null,
-            })
-            storage.remove("cachedUser")
-          }
-        } else {
-          // Error response
-          setAuthState({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null,
-          })
-          storage.remove("cachedUser")
-        }
-      } catch (error) {
-        console.error("Auth check error:", error)
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: "Failed to check authentication status",
-        })
-      }
-    }
-
-    checkAuth()
-
-    // Set up refresh interval for session
-    const intervalId = setInterval(checkAuth, 30 * 60 * 1000) // 30 minutes
-
-    return () => clearInterval(intervalId)
-  }, [])
-
-  // Sign in function
-  const signIn = async (email: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      setAuthState({ ...authState, isLoading: true, error: null })
-
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, name }),
-        credentials: "include",
-      })
-
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        setAuthState({
-          user: result.user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        })
-
-        // Cache user data
-        storage.set("cachedUser", result.user)
-
-        // Sync data after sign in
-        await storage.syncData()
-
-        return { success: true }
-      } else {
-        setAuthState({
-          ...authState,
-          isLoading: false,
-          error: result.error || "Sign in failed",
-        })
-        return { success: false, error: result.error || "Sign in failed" }
+      this.loading = true
+      const cachedUser = storage.get("cachedUser")
+      if (cachedUser) {
+        this.currentUser = cachedUser
       }
     } catch (error) {
-      const errorMessage = "Network error during sign in"
-      setAuthState({
-        ...authState,
-        isLoading: false,
-        error: errorMessage,
-      })
-      return { success: false, error: errorMessage }
+      console.error("Auth initialization error:", error)
+    } finally {
+      this.loading = false
     }
   }
 
-  // Sign up function
-  const signUp = async (email: string, name: string): Promise<{ success: boolean; error?: string }> => {
+  // Sign in
+  async signIn(email: string, name?: string): Promise<AuthResult> {
     try {
-      setAuthState({ ...authState, isLoading: true, error: null })
+      this.loading = true
+      this.error = null
 
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, name }),
-        credentials: "include",
-      })
-
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        setAuthState({
-          user: result.user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        })
-
-        // Cache user data
-        storage.set("cachedUser", result.user)
-
-        // Migrate local data to cloud
-        await migrateLocalDataToCloud()
-
-        return { success: true }
-      } else {
-        setAuthState({
-          ...authState,
-          isLoading: false,
-          error: result.error || "Sign up failed",
-        })
-        return { success: false, error: result.error || "Sign up failed" }
+      // For demo purposes, create a mock user
+      const mockUser: User = {
+        id: `user_${Date.now()}`,
+        email: email.trim(),
+        name: name || email.split("@")[0],
+        createdAt: new Date().toISOString(),
+        hasCloudBackup: false,
       }
+
+      this.currentUser = mockUser
+      storage.set("cachedUser", mockUser)
+
+      return { success: true, user: mockUser }
     } catch (error) {
-      const errorMessage = "Network error during sign up"
-      setAuthState({
-        ...authState,
-        isLoading: false,
-        error: errorMessage,
-      })
-      return { success: false, error: errorMessage }
+      console.error("Sign in error:", error)
+      this.error = "Sign in failed"
+      return { success: false, error: "Sign in failed" }
+    } finally {
+      this.loading = false
     }
   }
 
-  // Sign out function
-  const signOut = async (): Promise<boolean> => {
+  // Sign up
+  async signUp(email: string, name: string): Promise<AuthResult> {
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      })
+      this.loading = true
+      this.error = null
 
-      if (response.ok) {
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        })
-
-        // Remove cached user
-        storage.remove("cachedUser")
-
-        return true
+      // For demo purposes, create a mock user
+      const mockUser: User = {
+        id: `user_${Date.now()}`,
+        email: email.trim(),
+        name: name.trim(),
+        createdAt: new Date().toISOString(),
+        hasCloudBackup: false,
       }
 
-      return false
+      this.currentUser = mockUser
+      storage.set("cachedUser", mockUser)
+
+      return { success: true, user: mockUser }
     } catch (error) {
-      console.error("Error during sign out:", error)
+      console.error("Sign up error:", error)
+      this.error = "Sign up failed"
+      return { success: false, error: "Sign up failed" }
+    } finally {
+      this.loading = false
+    }
+  }
+
+  // Sign out
+  async signOut(): Promise<boolean> {
+    try {
+      this.currentUser = null
+      storage.remove("cachedUser")
+      return true
+    } catch (error) {
+      console.error("Sign out error:", error)
       return false
     }
   }
 
-  // Migrate local data to cloud
-  const migrateLocalDataToCloud = async (): Promise<boolean> => {
-    try {
-      const localData = storage.getUserData()
-      if (!localData || Object.keys(localData).length === 0) {
-        return true // No data to migrate
-      }
+  // Get current user
+  getCurrentUser(): User | null {
+    return this.currentUser
+  }
 
-      const response = await fetch("/api/data/migrate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userData: localData }),
-        credentials: "include",
-      })
+  // Check if authenticated
+  isAuthenticated(): boolean {
+    return !!this.currentUser
+  }
 
-      if (response.ok) {
-        console.log("Successfully migrated local data to cloud")
-        return true
-      } else {
-        console.error("Failed to migrate local data to cloud")
-        return false
-      }
-    } catch (error) {
-      console.error("Error migrating local data:", error)
-      return false
-    }
+  // Get loading state
+  isLoading(): boolean {
+    return this.loading
+  }
+
+  // Get error
+  getError(): string | null {
+    return this.error
   }
 
   // Clear error
-  const clearError = () => {
-    setAuthState({ ...authState, error: null })
+  clearError(): void {
+    this.error = null
   }
-
-  // Create the context value object
-  const value: AuthContextType = {
-    user: authState.user,
-    isAuthenticated: authState.isAuthenticated,
-    isLoading: authState.isLoading,
-    error: authState.error,
-    signIn,
-    signUp,
-    signOut,
-    clearError,
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-// Hook for using auth in components
+// Create singleton instance
+export const authService = new AuthServiceClass()
+
+// Export hook-like function for React components
 export function useAuth() {
-  return useContext(AuthContext)
+  return {
+    user: authService.getCurrentUser(),
+    isAuthenticated: authService.isAuthenticated(),
+    isLoading: authService.isLoading(),
+    error: authService.getError(),
+    signIn: authService.signIn.bind(authService),
+    signUp: authService.signUp.bind(authService),
+    signOut: authService.signOut.bind(authService),
+    clearError: authService.clearError.bind(authService),
+  }
+}
+
+// Initialize on import
+if (typeof window !== "undefined") {
+  authService.initialize()
 }
