@@ -1,73 +1,106 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
-import { authService, type User } from "@/lib/auth-service"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { authService } from "@/lib/auth-service"
 
-interface AuthContextType {
-  user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  signIn: (email: string, name?: string) => Promise<{ success: boolean; error?: string }>
-  signUp: (email: string, name: string) => Promise<{ success: boolean; error?: string }>
-  signOut: () => Promise<boolean>
+interface User {
+  name: string
+  email?: string
 }
 
-const AuthContext = createContext<AuthContextType | null>(null)
+interface AuthContextType {
+  isAuthenticated: boolean
+  user: User | null
+  login: (name: string, email?: string) => boolean
+  logout: () => boolean
+  isLoading: boolean
+}
 
-export function SimpleAuthProvider({ children }: { children: React.ReactNode }) {
+// Create context with default values
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  user: null,
+  login: () => false,
+  logout: () => false,
+  isLoading: true,
+})
+
+export function SimpleAuthProvider({ children }: { children: ReactNode }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Initialize auth state on mount
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        await authService.initialize()
-        setUser(authService.getCurrentUser())
-      } catch (error) {
-        console.error("Auth initialization error:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
+    try {
+      const isAuth = authService.isAuthenticated()
+      const currentUser = authService.getUser()
 
-    initAuth()
+      setIsAuthenticated(isAuth)
+      setUser(currentUser)
+    } catch (error) {
+      console.error("Auth initialization error:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }, [])
 
-  const contextValue: AuthContextType = {
-    user,
-    isAuthenticated: !!user,
-    isLoading,
-    signIn: async (email: string, name?: string) => {
-      const result = await authService.signIn(email, name)
-      if (result.success && result.user) {
-        setUser(result.user)
-      }
-      return result
-    },
-    signUp: async (email: string, name: string) => {
-      const result = await authService.signUp(email, name)
-      if (result.success && result.user) {
-        setUser(result.user)
-      }
-      return result
-    },
-    signOut: async () => {
-      const success = await authService.signOut()
+  // Login function
+  const login = (name: string, email?: string): boolean => {
+    try {
+      const success = authService.login({ name, email })
+
       if (success) {
+        setIsAuthenticated(true)
+        setUser({ name, email })
+      }
+
+      return success
+    } catch (error) {
+      console.error("Login error:", error)
+      return false
+    }
+  }
+
+  // Logout function
+  const logout = (): boolean => {
+    try {
+      const success = authService.logout()
+
+      if (success) {
+        setIsAuthenticated(false)
         setUser(null)
       }
+
       return success
-    },
+    } catch (error) {
+      console.error("Logout error:", error)
+      return false
+    }
+  }
+
+  // Context value
+  const contextValue: AuthContextType = {
+    isAuthenticated,
+    user,
+    login,
+    logout,
+    isLoading,
   }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
 }
 
+// Hook for using auth context
 export function useSimpleAuth() {
   const context = useContext(AuthContext)
+
   if (!context) {
     throw new Error("useSimpleAuth must be used within SimpleAuthProvider")
   }
+
   return context
 }
+
+// Alias for backward compatibility
+export const useAuth = useSimpleAuth

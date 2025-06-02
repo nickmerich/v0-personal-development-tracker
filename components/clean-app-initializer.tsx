@@ -1,11 +1,10 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface CleanAppInitializerProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export function CleanAppInitializer({ children }: CleanAppInitializerProps) {
@@ -13,11 +12,19 @@ export function CleanAppInitializer({ children }: CleanAppInitializerProps) {
 
   useEffect(() => {
     // Simple initialization without complex dependencies
-    const timer = setTimeout(() => {
-      setIsReady(true)
-    }, 100)
+    const initializeApp = async () => {
+      try {
+        // Just a simple delay to show loading
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        setIsReady(true)
+      } catch (error) {
+        console.error("Error initializing app:", error)
+        // Continue anyway to avoid blocking the app
+        setIsReady(true)
+      }
+    }
 
-    return () => clearTimeout(timer)
+    initializeApp()
   }, [])
 
   if (!isReady) {

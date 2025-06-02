@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowRight, ArrowLeft, Settings } from "lucide-react"
+import { ArrowRight, ArrowLeft, Settings, CheckCircle } from "lucide-react"
 import { SetupProgress } from "@/components/setup-progress"
 import { storage } from "@/lib/storage"
 import { setupManager } from "@/lib/setup-manager"
@@ -32,14 +32,31 @@ export default function CalendarPreferences() {
 
     // Check if previous step was completed
     if (!setupManager.isStepCompleted("categories")) {
+      console.log("⚠️ Categories step not completed, redirecting")
       router.push("/setup/categories")
     }
+
+    console.log("📅 Calendar preferences page loaded", { userData })
   }, [router])
 
   const handleComplete = async () => {
     setIsLoading(true)
 
     try {
+      console.log("🎯 Completing setup process...")
+
+      // Get current user data
+      const userData = storage.getUserData() || {}
+
+      // Validate required data
+      const validation = setupManager.validateSetupData()
+      if (!validation.isValid) {
+        console.error("❌ Setup validation failed:", validation.missingFields)
+        alert(`Please complete the following fields: ${validation.missingFields.join(", ")}`)
+        setIsLoading(false)
+        return
+      }
+
       // Initialize default affirmations
       const defaultAffirmations = [
         "I am built for this climb",
@@ -48,9 +65,6 @@ export default function CalendarPreferences() {
         "The summit is earned, not given",
         "I control my elevation",
       ]
-
-      // Get current user data
-      const userData = storage.getUserData() || {}
 
       // Ensure we have the 6 core categories with empty task arrays
       const coreCategories = ["Spiritual", "Physical", "Mental", "Nutritional", "Professional", "Family"]
@@ -62,7 +76,8 @@ export default function CalendarPreferences() {
       })
 
       // Update user data with all required fields
-      storage.updateUserData({
+      const completeUserData = {
+        ...userData,
         calendarPreferences: preferences,
         affirmations: userData.affirmations || defaultAffirmations,
         categories: userData.categories || coreCategories,
@@ -79,39 +94,51 @@ export default function CalendarPreferences() {
         },
         appliedTemplates: userData.appliedTemplates || [],
         notificationSettings: userData.notificationSettings || {},
-      })
+        onboardingCompleted: new Date().toISOString(),
+      }
 
-      // Mark step as completed and complete the setup
-      setupManager.markStepCompleted("calendar-preferences")
-      setupManager.completeSetup()
+      // Save the complete data
+      const success = storage.updateUserData(completeUserData)
 
-      // Navigate to dashboard
-      router.push("/dashboard")
+      if (success) {
+        // Mark step as completed and complete the setup
+        setupManager.markStepCompleted("calendar-preferences")
+        setupManager.completeSetup()
+
+        console.log("🎉 Setup completed successfully!", completeUserData)
+
+        // Navigate to dashboard
+        router.push("/dashboard")
+      } else {
+        console.error("❌ Failed to save setup data")
+        alert("Failed to save your preferences. Please try again.")
+      }
     } catch (error) {
-      console.error("Error completing setup:", error)
+      console.error("❌ Error completing setup:", error)
+      alert("An error occurred while completing setup. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-forest-50 via-stone-50 to-forest-100 p-4">
-      <Card className="w-full max-w-md border-forest-200 bg-white/90 backdrop-blur-sm shadow-xl">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 via-stone-50 to-green-100 p-4">
+      <Card className="w-full max-w-md border-green-200 bg-white/90 backdrop-blur-sm shadow-xl">
         <CardHeader>
-          <SetupProgress currentStep={5} totalSteps={5} />
-          <div className="mx-auto mt-4 flex h-12 w-12 items-center justify-center rounded-full bg-forest-100">
-            <Settings className="h-6 w-6 text-forest-600" />
+          <SetupProgress currentStep={setupManager.getCurrentStep()} totalSteps={setupManager.getTotalSteps()} />
+          <div className="mx-auto mt-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+            <Settings className="h-6 w-6 text-green-600" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center text-forest-800">Preferences</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center text-green-800">Final Step!</CardTitle>
           <CardDescription className="text-center text-stone-600">
-            Configure your schedule and reminder preferences
+            Configure your preferences and complete your setup
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="reminders" className="text-forest-800">
+                <Label htmlFor="reminders" className="text-green-800">
                   Daily Reminders
                 </Label>
                 <p className="text-sm text-stone-600">Get notified for your daily check-in</p>
@@ -125,17 +152,17 @@ export default function CalendarPreferences() {
 
             {preferences.enableReminders && (
               <div className="space-y-2">
-                <Label htmlFor="reminder-time" className="text-forest-800">
+                <Label htmlFor="reminder-time" className="text-green-800">
                   Reminder Time
                 </Label>
                 <Select
                   value={preferences.reminderTime}
                   onValueChange={(value) => setPreferences({ ...preferences, reminderTime: value })}
                 >
-                  <SelectTrigger className="border-forest-300 focus:border-forest-500">
+                  <SelectTrigger className="border-green-300 focus:border-green-500">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-forest-200">
+                  <SelectContent className="bg-white border-green-200">
                     <SelectItem value="07:00">7:00 AM - Early Morning</SelectItem>
                     <SelectItem value="08:00">8:00 AM - Morning</SelectItem>
                     <SelectItem value="09:00">9:00 AM - Mid Morning</SelectItem>
@@ -148,17 +175,17 @@ export default function CalendarPreferences() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="review-time" className="text-forest-800">
+              <Label htmlFor="review-time" className="text-green-800">
                 Daily Review Time
               </Label>
               <Select
                 value={preferences.dailyReviewTime}
                 onValueChange={(value) => setPreferences({ ...preferences, dailyReviewTime: value })}
               >
-                <SelectTrigger className="border-forest-300 focus:border-forest-500">
+                <SelectTrigger className="border-green-300 focus:border-green-500">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-forest-200">
+                <SelectContent className="bg-white border-green-200">
                   <SelectItem value="19:00">7:00 PM - Evening Reflection</SelectItem>
                   <SelectItem value="20:00">8:00 PM - Night Review</SelectItem>
                   <SelectItem value="21:00">9:00 PM - Before Bed</SelectItem>
@@ -167,28 +194,9 @@ export default function CalendarPreferences() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="planning-day" className="text-forest-800">
-                Weekly Planning Day
-              </Label>
-              <Select
-                value={preferences.weeklyPlanningDay}
-                onValueChange={(value) => setPreferences({ ...preferences, weeklyPlanningDay: value })}
-              >
-                <SelectTrigger className="border-forest-300 focus:border-forest-500">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-forest-200">
-                  <SelectItem value="sunday">Sunday - Week Preparation</SelectItem>
-                  <SelectItem value="monday">Monday - Fresh Start</SelectItem>
-                  <SelectItem value="saturday">Saturday - Weekend Planning</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="track-habits" className="text-forest-800">
+                <Label htmlFor="track-habits" className="text-green-800">
                   Habit Tracking
                 </Label>
                 <p className="text-sm text-stone-600">Track consecutive days of progress</p>
@@ -200,19 +208,34 @@ export default function CalendarPreferences() {
               />
             </div>
           </div>
+
+          {/* Setup Summary */}
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Setup Summary
+            </h4>
+            <div className="text-sm text-green-700 space-y-1">
+              <p>✅ Personal information configured</p>
+              <p>✅ Your "why" defined</p>
+              <p>✅ Big goal established</p>
+              <p>✅ Life categories selected</p>
+              <p>✅ Preferences configured</p>
+            </div>
+          </div>
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button
             variant="outline"
             onClick={() => router.push("/setup/categories")}
-            className="border-forest-300 text-forest-600 hover:bg-forest-50"
+            className="border-green-300 text-green-600 hover:bg-green-50"
             disabled={isLoading}
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
           <Button
             onClick={handleComplete}
-            className="bg-forest-600 text-white hover:bg-forest-700 shadow-lg"
+            className="bg-green-600 text-white hover:bg-green-700 shadow-lg"
             disabled={isLoading}
           >
             {isLoading ? "Completing Setup..." : "Complete Setup"} <ArrowRight className="ml-2 h-4 w-4" />

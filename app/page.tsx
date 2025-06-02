@@ -1,5 +1,6 @@
 "use client"
-import { useState } from "react"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mountain, Target, Calendar, Trophy, ArrowRight } from "lucide-react"
@@ -7,11 +8,22 @@ import { useRouter } from "next/navigation"
 import { GrytLogo } from "@/components/gryt-logo"
 import { AuthModal } from "@/components/auth-modal"
 import { useSimpleAuth } from "@/components/simple-auth-provider"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
-export default function HomePage() {
+export default function Page() {
   const router = useRouter()
   const { isAuthenticated, user } = useSimpleAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Simple loading delay
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
@@ -23,6 +35,17 @@ export default function HomePage() {
 
   const handleSignIn = () => {
     setShowAuthModal(true)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-green-700 font-medium">🏔️ Loading The Gryt...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
