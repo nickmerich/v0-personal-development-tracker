@@ -8,6 +8,7 @@ interface AppState {
   userData: UserData | null
   isLoading: boolean
   error: string | null
+  isInitialized: boolean
 
   // Actions
   setUserData: (data: UserData) => void
@@ -15,6 +16,7 @@ interface AppState {
   clearUserData: () => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
+  setInitialized: (initialized: boolean) => void
 
   // Task management
   addTask: (category: string, task: any) => void
@@ -37,30 +39,57 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       userData: null,
-      isLoading: true,
+      isLoading: false, // Start with false to prevent infinite loading
       error: null,
+      isInitialized: false,
 
       setUserData: (data) => {
-        const validatedData = validateUserData(data)
-        set({ userData: validatedData, error: null })
+        try {
+          const validatedData = validateUserData(data)
+          set({
+            userData: validatedData,
+            error: null,
+            isLoading: false,
+            isInitialized: true,
+          })
+        } catch (error) {
+          console.error("Error setting user data:", error)
+          set({
+            error: "Failed to validate user data",
+            isLoading: false,
+            isInitialized: true,
+          })
+        }
       },
 
       updateUserData: (updates) => {
         const currentData = get().userData
         if (!currentData) return
 
-        const updatedData = { ...currentData, ...updates }
-        const validatedData = validateUserData(updatedData)
-        set({ userData: validatedData })
+        try {
+          const updatedData = { ...currentData, ...updates }
+          const validatedData = validateUserData(updatedData)
+          set({ userData: validatedData, error: null })
+        } catch (error) {
+          console.error("Error updating user data:", error)
+          set({ error: "Failed to update user data" })
+        }
       },
 
       clearUserData: () => {
-        set({ userData: null, error: null })
+        set({
+          userData: null,
+          error: null,
+          isLoading: false,
+          isInitialized: true,
+        })
       },
 
       setLoading: (loading) => set({ isLoading: loading }),
 
-      setError: (error) => set({ error }),
+      setError: (error) => set({ error, isLoading: false }),
+
+      setInitialized: (initialized) => set({ isInitialized: initialized }),
 
       addTask: (category, task) => {
         const state = get()
@@ -190,14 +219,26 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "app-storage",
-      partialize: (state) => ({ userData: state.userData }),
+      partialize: (state) => ({
+        userData: state.userData,
+        isInitialized: state.isInitialized,
+      }),
     },
   ),
 )
 
-// Initialize store from localStorage
+// Initialize store from localStorage with timeout
 export const initializeStore = () => {
   const store = useAppStore.getState()
+
+  // Set a timeout to prevent infinite loading
+  const initTimeout = setTimeout(() => {
+    if (!store.isInitialized) {
+      console.warn("Store initialization timeout, setting as initialized")
+      store.setInitialized(true)
+      store.setLoading(false)
+    }
+  }, 2000) // 2 second timeout
 
   try {
     const storedData = localStorage.getItem("userData")
@@ -205,11 +246,14 @@ export const initializeStore = () => {
       const parsedData = JSON.parse(storedData)
       const validatedData = validateUserData(parsedData)
       store.setUserData(validatedData)
+    } else {
+      store.setInitialized(true)
     }
+    clearTimeout(initTimeout)
   } catch (error) {
     console.error("Failed to initialize store from localStorage:", error)
     store.setError("Failed to load user data")
-  } finally {
-    store.setLoading(false)
+    store.setInitialized(true)
+    clearTimeout(initTimeout)
   }
 }
