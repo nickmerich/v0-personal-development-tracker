@@ -1,7 +1,6 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { authService } from "@/lib/auth-service"
 
 interface User {
   name: string
@@ -33,11 +32,20 @@ export function SimpleAuthProvider({ children }: { children: ReactNode }) {
   // Initialize auth state on mount
   useEffect(() => {
     try {
-      const isAuth = authService.isAuthenticated()
-      const currentUser = authService.getUser()
-
-      setIsAuthenticated(isAuth)
-      setUser(currentUser)
+      // Use localStorage directly instead of authService to avoid method conflicts
+      if (typeof window !== "undefined") {
+        const userData = localStorage.getItem("userData")
+        if (userData) {
+          const parsed = JSON.parse(userData)
+          if (parsed.name) {
+            setIsAuthenticated(true)
+            setUser({
+              name: parsed.name,
+              email: parsed.email || "user@example.com",
+            })
+          }
+        }
+      }
     } catch (error) {
       console.error("Auth initialization error:", error)
     } finally {
@@ -48,14 +56,19 @@ export function SimpleAuthProvider({ children }: { children: ReactNode }) {
   // Login function
   const login = (name: string, email?: string): boolean => {
     try {
-      const success = authService.login({ name, email })
+      if (typeof window !== "undefined") {
+        const userData = {
+          name,
+          email: email || "user@example.com",
+          lastLogin: new Date().toISOString(),
+        }
 
-      if (success) {
+        localStorage.setItem("userData", JSON.stringify(userData))
         setIsAuthenticated(true)
         setUser({ name, email })
+        return true
       }
-
-      return success
+      return false
     } catch (error) {
       console.error("Login error:", error)
       return false
@@ -65,14 +78,10 @@ export function SimpleAuthProvider({ children }: { children: ReactNode }) {
   // Logout function
   const logout = (): boolean => {
     try {
-      const success = authService.logout()
-
-      if (success) {
-        setIsAuthenticated(false)
-        setUser(null)
-      }
-
-      return success
+      setIsAuthenticated(false)
+      setUser(null)
+      // Don't clear localStorage to preserve onboarding data
+      return true
     } catch (error) {
       console.error("Logout error:", error)
       return false

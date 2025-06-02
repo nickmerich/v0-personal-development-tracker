@@ -107,7 +107,12 @@ class AuthServiceClass {
     }
   }
 
-  // Get current user
+  // Get current user (MISSING METHOD - NOW ADDED)
+  getUser(): User | null {
+    return this.currentUser
+  }
+
+  // Get current user (alias for compatibility)
   getCurrentUser(): User | null {
     return this.currentUser
   }
@@ -136,7 +141,7 @@ class AuthServiceClass {
 // Create singleton instance
 export const authService = new AuthServiceClass()
 
-// Export hook-like function for React components (REQUIRED EXPORT)
+// Export hook-like function for React components
 export function useAuth() {
   return {
     user: authService.getCurrentUser(),
