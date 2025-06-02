@@ -1,19 +1,37 @@
-```tsx file="app/dashboard/page.tsx"
-[v0-no-op-code-block-prefix]import { authService } from "@/lib/auth-service"
+"use client"
 
-const DashboardPage = async () => {
-  const session = await authService.getSession();
+import { useState, useEffect } from "react"
+import { Cloud, CloudOff } from "lucide-react"
+
+export function BackupStatus() {
+  const [isOnline, setIsOnline] = useState(true)
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
 
   return (
-    <div>
-      <h1>Dashboard</h1>
-      {session ? (
-        <p>Welcome, {session?.user?.name}!</p>
+    <div className="flex items-center gap-1 text-xs text-stone-500">
+      {isOnline ? (
+        <>
+          <Cloud className="h-3 w-3 text-green-500" />
+          <span>Auto-saving</span>
+        </>
       ) : (
-        <p>Please sign in.</p>
+        <>
+          <CloudOff className="h-3 w-3 text-orange-500" />
+          <span>Offline</span>
+        </>
       )}
     </div>
-  );
-};
-
-export default DashboardPage;
+  )
+}
