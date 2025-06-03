@@ -1,9 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { DataService } from "@/lib/data-service"
+import { cookies } from "next/headers"
 
 export async function POST(request: NextRequest) {
   try {
-    const sessionToken = request.cookies.get("session")?.value
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
 
     if (!sessionToken) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })

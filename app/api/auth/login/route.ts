@@ -1,38 +1,30 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { DataService } from "@/lib/data-service"
+import { NextResponse, type NextRequest } from "next/server"
+import { cookies } from "next/headers"
+import { DataService } from "@/services/data"
 
 export async function POST(request: NextRequest) {
   try {
     const { email, name } = await request.json()
 
-    if (!email || !name) {
-      return NextResponse.json({ error: "Email and name are required" }, { status: 400 })
+    if (!email) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 })
     }
 
-    // Initialize data service
-    await DataService.initialize()
-
-    // Try to get existing user or create new one
-    let user = await DataService.authenticateUser(email)
+    const user = await DataService.createUser(email, name || email.split("@")[0])
 
     if (!user) {
-      user = await DataService.createUser(email, name)
+      return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
     }
 
-    if (!user) {
-      return NextResponse.json({ error: "Failed to create or authenticate user" }, { status: 500 })
-    }
-
-    // Create session
     const sessionToken = await DataService.createSession(user.id)
 
     if (!sessionToken) {
       return NextResponse.json({ error: "Failed to create session" }, { status: 500 })
     }
 
-    // Set session cookie
-    const response = NextResponse.json({ success: true, user })
-    response.cookies.set("session", sessionToken, {
+    const response = NextResponse.json({ user })
+    const cookieStore = await cookies()
+    cookieStore.set("session", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

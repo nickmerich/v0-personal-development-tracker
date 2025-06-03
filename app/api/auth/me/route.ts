@@ -1,41 +1,23 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/database"
+import { cookies } from "next/headers"
+import { NextResponse } from "next/server"
+import { DataService } from "@/services/data-service"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // Get session token from cookies
-    const sessionToken = request.cookies.get("session_token")?.value
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
 
     if (!sessionToken) {
-      return NextResponse.json({ user: null }, { status: 200 })
+      return NextResponse.json({ error: "No session found" }, { status: 401 })
     }
 
-    // Check if session exists and is valid
-    const sessions = await sql`
-      SELECT u.id, u.email, u.name, u.created_at, s.expires_at
-      FROM users u
-      JOIN user_sessions s ON u.id = s.user_id
-      WHERE s.session_token = ${sessionToken}
-      AND s.expires_at > NOW()
-    `
+    const user = await DataService.validateSession(sessionToken)
 
-    if (sessions.length === 0) {
-      // Session expired or invalid
-      const response = NextResponse.json({ user: null }, { status: 200 })
-      response.cookies.delete("session_token")
-      return response
+    if (!user) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 })
     }
 
-    const user = sessions[0]
-    return NextResponse.json({
-      user: {
-        id: user.id.toString(),
-        email: user.email,
-        name: user.name,
-        createdAt: user.created_at,
-        hasCloudBackup: true,
-      },
-    })
+    return NextResponse.json({ user })
   } catch (error) {
     console.error("Auth check error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

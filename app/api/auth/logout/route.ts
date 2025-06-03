@@ -1,16 +1,18 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { DataService } from "@/lib/data-service"
+import { cookies } from "next/headers"
+import { NextResponse } from "next/server"
+import { DataService } from "@/services/data-service"
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const sessionToken = request.cookies.get("session")?.value
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
 
     if (sessionToken) {
       await DataService.destroySession(sessionToken)
     }
 
     const response = NextResponse.json({ success: true })
-    response.cookies.delete("session")
+    cookieStore.delete("session")
 
     return response
   } catch (error) {
