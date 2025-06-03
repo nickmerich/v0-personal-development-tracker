@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mountain, Target, Calendar, Trophy, ArrowRight } from "lucide-react"
+import { Target, Calendar, Trophy, ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { GrytLogo } from "@/components/gryt-logo"
 import { AuthModal } from "@/components/auth-modal"
@@ -42,7 +42,7 @@ export default function Page() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
         <div className="text-center space-y-4">
           <LoadingSpinner size="lg" />
-          <p className="text-green-700 font-medium">🏔️ Loading The Gryt...</p>
+          <p className="text-green-700 font-medium">Loading The Gryt...</p>
         </div>
       </div>
     )
@@ -51,22 +51,35 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
+      <header className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <GrytLogo className="h-10 w-10" />
-            <h1 className="text-2xl font-bold text-gray-900">The Gryt</h1>
+          <div className="flex items-center">
+            <GrytLogo
+              size="sm"
+              variant="seamless"
+              priority
+              className="transition-transform duration-200 hover:scale-105"
+            />
           </div>
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-600">Welcome back, {user?.name}!</span>
-                <Button onClick={() => router.push("/dashboard")} className="bg-green-600 hover:bg-green-700">
+                <span className="text-sm text-gray-600 hidden sm:inline">Welcome back, {user?.name}!</span>
+                <Button
+                  onClick={() => router.push("/dashboard")}
+                  className="bg-green-600 hover:bg-green-700 shadow-sm"
+                  size="sm"
+                >
                   Dashboard
                 </Button>
               </div>
             ) : (
-              <Button variant="outline" onClick={handleSignIn}>
+              <Button
+                variant="outline"
+                onClick={handleSignIn}
+                className="border-green-200 text-green-700 hover:bg-green-50 shadow-sm"
+                size="sm"
+              >
                 Sign In
               </Button>
             )}
@@ -75,21 +88,25 @@ export default function Page() {
       </header>
 
       {/* Hero Section */}
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 py-8">
         <div className="text-center max-w-4xl mx-auto">
           <div className="mb-8">
-            <h2 className="text-5xl font-bold text-gray-900 mb-6">
-              Transform Your Life in <span className="text-green-600">90 Days</span>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+              Build Your Best Self in <span className="text-green-600">90 Days</span>
             </h2>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Join thousands who've conquered their mountains. Track habits, achieve goals, and become the person you've
-              always wanted to be.
+            <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+              Create lasting change through consistent daily actions. Track meaningful habits, achieve your goals, and
+              unlock the potential you know is within you.
             </p>
           </div>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-            <Button onClick={handleGetStarted} size="lg" className="bg-green-600 hover:bg-green-700 text-lg px-8 py-4">
+            <Button
+              onClick={handleGetStarted}
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-lg px-8 py-4 shadow-lg hover:shadow-xl transition-all duration-200"
+            >
               Start Your Journey
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -97,7 +114,7 @@ export default function Page() {
               variant="outline"
               size="lg"
               onClick={() => router.push("/test-journey")}
-              className="text-lg px-8 py-4"
+              className="text-lg px-8 py-4 border-green-200 text-green-700 hover:bg-green-50 shadow-sm hover:shadow-md transition-all duration-200"
             >
               Take a Test Drive
             </Button>
@@ -105,75 +122,74 @@ export default function Page() {
 
           {/* Feature Cards */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <Mountain className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle className="text-lg">Mountain Metaphor</CardTitle>
+            <Card className="text-center hover:shadow-lg transition-all duration-300 border-green-100 hover:border-green-200">
+              <CardHeader className="pb-4">
+                <Target className="h-10 w-10 text-green-600 mx-auto mb-3" />
+                <CardTitle className="text-lg text-gray-800">Clear Direction</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
-                  Every goal is a mountain to climb. Break it down into manageable steps and reach the summit.
+                <CardDescription className="text-gray-600 leading-relaxed">
+                  Set meaningful goals and break them into actionable daily steps that build momentum over time.
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <Target className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle className="text-lg">Smart Goal Setting</CardTitle>
+            <Card className="text-center hover:shadow-lg transition-all duration-300 border-green-100 hover:border-green-200">
+              <CardHeader className="pb-4">
+                <Calendar className="h-10 w-10 text-green-600 mx-auto mb-3" />
+                <CardTitle className="text-lg text-gray-800">Daily Progress</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
-                  Set SMART goals and track your progress with our intuitive milestone system.
+                <CardDescription className="text-gray-600 leading-relaxed">
+                  Track your habits and see your consistency build day by day with visual progress indicators.
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <Calendar className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle className="text-lg">Daily Habits</CardTitle>
+            <Card className="text-center hover:shadow-lg transition-all duration-300 border-green-100 hover:border-green-200">
+              <CardHeader className="pb-4">
+                <Trophy className="h-10 w-10 text-green-600 mx-auto mb-3" />
+                <CardTitle className="text-lg text-gray-800">Milestone Rewards</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
-                  Build lasting habits with daily tracking and smart reminders that adapt to your schedule.
+                <CardDescription className="text-gray-600 leading-relaxed">
+                  Celebrate your wins with achievement badges and milestone tracking that keeps you motivated.
                 </CardDescription>
               </CardContent>
             </Card>
 
-            <Card className="text-center hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <Trophy className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle className="text-lg">Achievement System</CardTitle>
+            <Card className="text-center hover:shadow-lg transition-all duration-300 border-green-100 hover:border-green-200">
+              <CardHeader className="pb-4">
+                <div className="h-10 w-10 text-green-600 mx-auto mb-3 flex items-center justify-center text-2xl">
+                  🎯
+                </div>
+                <CardTitle className="text-lg text-gray-800">Personal Growth</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>
-                  Earn badges, celebrate milestones, and stay motivated with our gamified progress system.
+                <CardDescription className="text-gray-600 leading-relaxed">
+                  Focus on what matters most to you across all areas of life - health, relationships, career, and more.
                 </CardDescription>
               </CardContent>
             </Card>
           </div>
 
-          {/* Social Proof */}
-          <div className="bg-white rounded-lg p-8 shadow-sm">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Join the Community</h3>
-            <p className="text-gray-600 mb-6">
-              Thousands of people are already transforming their lives with The Gryt. Start your 90-day journey today.
+          {/* Enhanced CTA */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-green-100">
+            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              <span className="inline-block mr-2">🌟</span> Ready to Begin Your 90-Day Journey?
+            </h3>
+            <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+              Transform your life through consistent action. Build the habits that create lasting change, one day at a
+              time.
             </p>
-            <div className="flex justify-center gap-8 text-center">
-              <div>
-                <div className="text-3xl font-bold text-green-600">10K+</div>
-                <div className="text-sm text-gray-600">Active Users</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-green-600">50K+</div>
-                <div className="text-sm text-gray-600">Goals Achieved</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-green-600">95%</div>
-                <div className="text-sm text-gray-600">Success Rate</div>
-              </div>
-            </div>
+            <Button
+              onClick={handleGetStarted}
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-white font-medium px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              Start Your Journey
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
           </div>
         </div>
       </main>

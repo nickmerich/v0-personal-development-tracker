@@ -1,162 +1,163 @@
-// Mountain climbing themed copy for The Gryt platform
-export const MOUNTAIN_COPY = {
+// Journey-focused copy for The Gryt platform
+export const JOURNEY_COPY = {
   // Main dashboard sections
   dashboard: {
-    basecampCheckin: {
-      title: "🏕 BASECAMP CHECK-IN",
-      subtitle: "Start here. Complete today's non-negotiables.",
+    dailyCheckin: {
+      title: "🎯 DAILY CHECK-IN",
+      subtitle: "Start here. Complete today's essential actions.",
       description:
-        "Track your actions across Spiritual, Physical, Mental, Nutritional, Professional, and Family categories. Build momentum. Earn your elevation.",
+        "Track your progress across Spiritual, Physical, Mental, Nutritional, Professional, and Family areas. Build consistency. Create momentum.",
     },
-    mapYourClimb: {
-      title: "📍 MAP YOUR CLIMB",
-      subtitle: "Lock in your 90-day ascent plan.",
+    planYourPath: {
+      title: "🗺️ PLAN YOUR PATH",
+      subtitle: "Design your 90-day transformation journey.",
       description:
-        "Three phases. One summit. Structure your mission with clear milestones, commitments, and non-negotiables. This is your contract.",
+        "Three phases. Clear direction. Structure your growth with specific milestones, commitments, and daily actions. This is your roadmap.",
     },
-    flagsOnRidge: {
-      title: "🚩 FLAGS ON THE RIDGE",
-      subtitle: "Track key milestones across your journey.",
+    milestoneMarkers: {
+      title: "🚩 MILESTONE MARKERS",
+      subtitle: "Track key achievements along your journey.",
       description:
-        "Whether it's revenue, sobriety streaks, weight loss, or marathon distance—mark what matters and measure progress as you climb.",
+        "Whether it's revenue goals, health targets, or personal growth metrics—mark what matters and measure your progress.",
     },
-    fuelForClimb: {
-      title: "🔥 FUEL FOR THE CLIMB",
-      subtitle: "Stay mentally locked in with your affirmations.",
+    dailyFuel: {
+      title: "💪 DAILY FUEL",
+      subtitle: "Stay motivated with your personal affirmations.",
       description:
-        "Scroll through the beliefs that power your ascent. Speak them daily. Print them if you have to. This is your internal oxygen tank.",
+        "Review the beliefs that power your transformation. Speak them daily. Live them consistently. This is your inner strength.",
     },
-    trailMap: {
-      title: "🧭 YOUR TRAIL MAP",
-      subtitle: "See where you are. Adjust if needed. Keep moving.",
+    progressMap: {
+      title: "📊 YOUR PROGRESS MAP",
+      subtitle: "See where you are. Adjust as needed. Keep moving forward.",
       description:
-        "Visualize your completion percentage across all categories. Stay focused on consistency, not perfection. Momentum wins.",
+        "Visualize your completion percentage across all life areas. Focus on consistency over perfection. Progress wins.",
     },
-    daysAboveFog: {
-      title: "🌤 DAYS ABOVE THE FOG",
-      subtitle: "Keep stacking clean days. Don't look down.",
+    streakCounter: {
+      title: "🔥 CONSISTENCY STREAK",
+      subtitle: "Keep building momentum. Don't break the chain.",
       description:
-        "Your streak matters. Show up every day and don't break the chain. Elevation is earned one clean day at a time.",
+        "Your daily consistency matters. Show up every day and maintain your streak. Growth happens one day at a time.",
     },
-    summitMode: {
-      title: "🎯 SUMMIT MODE ON",
-      subtitle: "You're not here to coast. You're here to climb.",
-      description: "Pick your goal. Build belief. Stack the days. Nobody drags you to the top—you earn every inch.",
+    focusMode: {
+      title: "🎯 FOCUS MODE ON",
+      subtitle: "You're here to grow. You're here to transform.",
+      description:
+        "Choose your goal. Build the habit. Stack the days. Your transformation is earned through daily action.",
     },
   },
 
-  // Categories with mountain metaphors
+  // Categories with journey metaphors
   categories: {
     Spiritual: {
       icon: "🙏",
-      altNames: ["Faith", "Mindfulness", "Inner Compass"],
-      description: "Your spiritual foundation - the bedrock of your climb",
+      altNames: ["Faith", "Mindfulness", "Inner Growth"],
+      description: "Your spiritual foundation - the core of your journey",
     },
     Physical: {
       icon: "💪",
-      altNames: ["Fitness", "Health", "Body Strength"],
-      description: "Physical conditioning for the ascent ahead",
+      altNames: ["Fitness", "Health", "Physical Wellness"],
+      description: "Physical vitality for sustained energy and strength",
     },
     Mental: {
       icon: "🧠",
-      altNames: ["Mindset", "Psychology", "Mental Toughness"],
-      description: "Mental fortitude to push through the hard climbs",
+      altNames: ["Mindset", "Psychology", "Mental Clarity"],
+      description: "Mental resilience to overcome challenges and grow",
     },
     Nutritional: {
       icon: "🥗",
-      altNames: ["Nutrition", "Fuel", "Energy"],
-      description: "Proper fuel for sustained energy on the mountain",
+      altNames: ["Nutrition", "Fuel", "Healthy Eating"],
+      description: "Proper nutrition for optimal energy and wellbeing",
     },
     Professional: {
       icon: "💼",
-      altNames: ["Career", "Work", "Business"],
-      description: "Professional growth and career advancement",
+      altNames: ["Career", "Work", "Professional Growth"],
+      description: "Career development and professional excellence",
     },
     Family: {
       icon: "👨‍👩‍👧‍👦",
-      altNames: ["Relationships", "Loved Ones", "Support System"],
-      description: "Your support team and climbing partners",
+      altNames: ["Relationships", "Loved Ones", "Connections"],
+      description: "Meaningful relationships and strong connections",
     },
   },
 
   // Progress and motivation messages
   progress: {
-    excellent: "🚀 Summit in sight! Outstanding progress!",
-    good: "⛰️ Solid climbing! You're gaining elevation!",
-    needsWork: "🥾 Keep stepping. Every step counts on the mountain.",
-    justStarted: "🏔️ Base camp established. Time to start climbing!",
+    excellent: "🚀 Outstanding progress! You're on fire!",
+    good: "⭐ Great momentum! You're building strong habits!",
+    needsWork: "💪 Keep going. Every step forward counts.",
+    justStarted: "🌱 Journey begun. Time to build momentum!",
   },
 
   // Task completion messages
   tasks: {
-    completed: "✅ Step completed! You're gaining elevation!",
-    streak: "🔥 On fire! Your climbing rhythm is strong!",
-    addTask: "Add Climb Step",
-    noTasks: "Ready to take your first step up the mountain?",
+    completed: "✅ Action completed! You're building momentum!",
+    streak: "🔥 On fire! Your consistency is paying off!",
+    addTask: "Add Action Step",
+    noTasks: "Ready to take your first step forward?",
     completeTask: "Mark Complete",
-    viewAll: "View All Steps",
+    viewAll: "View All Actions",
   },
 
   // Milestone language
   milestones: {
-    create: "Plant Your Flag",
-    achieved: "🚩 Flag Planted! Milestone Reached!",
-    inProgress: "Climbing toward your flag...",
-    noMilestones: "Ready to plant your first flag on the mountain?",
+    create: "Set Your Milestone",
+    achieved: "🎉 Milestone Achieved! Great progress!",
+    inProgress: "Working toward your milestone...",
+    noMilestones: "Ready to set your first milestone?",
   },
 
   // Affirmations/Fuel
   affirmations: {
-    title: "Mountain Mantras",
-    subtitle: "Your internal oxygen tank",
-    noAffirmations: "Add your first climbing mantra",
-    edit: "Update Your Mantras",
+    title: "Daily Affirmations",
+    subtitle: "Your inner strength and motivation",
+    noAffirmations: "Add your first daily affirmation",
+    edit: "Update Your Affirmations",
   },
 
   // Buttons and actions
   buttons: {
-    startClimb: "Start Your Climb",
-    continueClimb: "Continue Climbing",
-    plantFlag: "Plant Flag",
+    startJourney: "Start Your Journey",
+    continueJourney: "Continue Journey",
+    setMilestone: "Set Milestone",
     addStep: "Add Step",
-    earnElevation: "Earn Elevation",
-    checkBasecamp: "Check Basecamp",
-    viewTrail: "View Trail Map",
-    summitMode: "Enter Summit Mode",
+    buildMomentum: "Build Momentum",
+    dailyCheckin: "Daily Check-in",
+    viewProgress: "View Progress",
+    focusMode: "Enter Focus Mode",
   },
 
-  // Error messages with mountain theme
+  // Error messages with journey theme
   errors: {
-    loadingFailed: "Trail conditions unclear. Let's try again.",
-    saveFailed: "Couldn't log your progress. Check your connection to base camp.",
-    taskFailed: "Step update failed. Retry your climb.",
-    generic: "Unexpected weather on the mountain. We're clearing the path!",
+    loadingFailed: "Path unclear. Let's try again.",
+    saveFailed: "Couldn't save your progress. Check your connection.",
+    taskFailed: "Action update failed. Please retry.",
+    generic: "Unexpected detour. We're getting back on track!",
   },
 } as const
 
 // Helper functions for dynamic copy
-export function getElevationMessage(percentage: number): string {
-  if (percentage >= 80) return MOUNTAIN_COPY.progress.excellent
-  if (percentage >= 60) return MOUNTAIN_COPY.progress.good
-  if (percentage >= 20) return MOUNTAIN_COPY.progress.needsWork
-  return MOUNTAIN_COPY.progress.justStarted
+export function getProgressMessage(percentage: number): string {
+  if (percentage >= 80) return JOURNEY_COPY.progress.excellent
+  if (percentage >= 60) return JOURNEY_COPY.progress.good
+  if (percentage >= 20) return JOURNEY_COPY.progress.needsWork
+  return JOURNEY_COPY.progress.justStarted
 }
 
-export function getClimbingMessage(completedCount: number): string {
-  if (completedCount === 1) return "🏔️ First step taken! The climb begins!"
-  if (completedCount === 5) return "⛰️ Five steps up! You're finding your rhythm!"
-  if (completedCount === 10) return "🚀 Ten steps climbed! Unstoppable momentum!"
-  if (completedCount % 5 === 0) return `🎯 ${completedCount} steps climbed! Summit getting closer!`
-  return "💪 Another step up the mountain! Keep climbing!"
+export function getMotivationMessage(completedCount: number): string {
+  if (completedCount === 1) return "🌱 First step taken! Your journey begins!"
+  if (completedCount === 5) return "⭐ Five actions completed! You're building momentum!"
+  if (completedCount === 10) return "🚀 Ten actions done! Unstoppable progress!"
+  if (completedCount % 5 === 0) return `🎯 ${completedCount} actions completed! Keep going!`
+  return "💪 Another step forward! You're building something great!"
 }
 
 export function getDaysSinceStart(startDate: string): string {
   const days = calculateDayNumber(startDate)
-  if (days === 1) return "Day 1 - Base camp established"
-  if (days <= 30) return `Day ${days} - Building climbing strength`
-  if (days <= 60) return `Day ${days} - Gaining serious elevation`
-  if (days <= 90) return `Day ${days} - Summit approach begins`
-  return `Day ${days} - Beyond the summit, new peaks ahead`
+  if (days === 1) return "Day 1 - Your journey begins"
+  if (days <= 30) return `Day ${days} - Building strong foundations`
+  if (days <= 60) return `Day ${days} - Creating lasting change`
+  if (days <= 90) return `Day ${days} - Transformation in progress`
+  return `Day ${days} - Beyond goals, new horizons ahead`
 }
 
 function calculateDayNumber(startDate: string): number {
