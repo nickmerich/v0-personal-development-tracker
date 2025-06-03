@@ -22,6 +22,7 @@ export interface UserData {
   notificationSettings?: any
   setupCompleted?: boolean
   calendarPreferences?: any
+  completedSteps?: string[]
 }
 
 // Simple storage service for client-side data management
@@ -68,15 +69,29 @@ class StorageService {
   }
 
   // Get user data
-  getUserData(): any {
-    return this.get("userData") || {}
+  getUserData(): UserData | null {
+    try {
+      const data = this.get("userData")
+      if (data === null) return null
+      return this.validateUserData(data)
+    } catch (error) {
+      console.error("Get user data error:", error)
+      return null
+    }
   }
 
   // Update user data
-  updateUserData(data: any): boolean {
-    const currentData = this.getUserData()
-    const updatedData = { ...currentData, ...data }
-    return this.set("userData", updatedData)
+  updateUserData(data: Partial<UserData>): boolean {
+    try {
+      console.log("🔄 Updating user data", data)
+      const currentData = this.getUserData() || {}
+      const updatedData = { ...currentData, ...data }
+      console.log("✅ Updated data:", updatedData)
+      return this.set("userData", updatedData)
+    } catch (error) {
+      console.error("Update user data error:", error)
+      return false
+    }
   }
 
   // Clear all data
@@ -92,45 +107,47 @@ class StorageService {
       return false
     }
   }
+
+  // Validate and sanitize user data
+  validateUserData(userData: any): UserData {
+    if (!userData || typeof userData !== "object") {
+      return {}
+    }
+
+    return {
+      name: userData.name || "",
+      startDate: userData.startDate || new Date().toISOString().split("T")[0],
+      myWhy: userData.myWhy || "",
+      bigGoal: userData.bigGoal || "",
+      categories: Array.isArray(userData.categories) ? userData.categories : [],
+      tasks: userData.tasks && typeof userData.tasks === "object" ? userData.tasks : {},
+      milestones: Array.isArray(userData.milestones) ? userData.milestones : [],
+      journalEntries:
+        userData.journalEntries && typeof userData.journalEntries === "object" ? userData.journalEntries : {},
+      affirmations: Array.isArray(userData.affirmations) ? userData.affirmations : [],
+      gamification: userData.gamification || {
+        level: 1,
+        xp: 0,
+        totalXp: 0,
+        streak: 0,
+        achievements: [],
+        badges: [],
+      },
+      appliedTemplates: Array.isArray(userData.appliedTemplates) ? userData.appliedTemplates : [],
+      notificationSettings: userData.notificationSettings || {},
+      setupCompleted: Boolean(userData.setupCompleted),
+      calendarPreferences: userData.calendarPreferences || {},
+      completedSteps: Array.isArray(userData.completedSteps) ? userData.completedSteps : [],
+    }
+  }
 }
 
 // Export singleton instance
 export const storage = new StorageService()
 
-/**
- * Validates and sanitizes user data to ensure it conforms to the expected structure
- * @param userData - The user data to validate
- * @returns A sanitized UserData object with default values for missing properties
- */
+// Also export validateUserData separately as required
 export function validateUserData(userData: any): UserData {
-  if (!userData || typeof userData !== "object") {
-    return {}
-  }
-
-  return {
-    name: userData.name || "",
-    startDate: userData.startDate || new Date().toISOString().split("T")[0],
-    myWhy: userData.myWhy || "",
-    bigGoal: userData.bigGoal || "",
-    categories: Array.isArray(userData.categories) ? userData.categories : [],
-    tasks: userData.tasks && typeof userData.tasks === "object" ? userData.tasks : {},
-    milestones: Array.isArray(userData.milestones) ? userData.milestones : [],
-    journalEntries:
-      userData.journalEntries && typeof userData.journalEntries === "object" ? userData.journalEntries : {},
-    affirmations: Array.isArray(userData.affirmations) ? userData.affirmations : [],
-    gamification: userData.gamification || {
-      level: 1,
-      xp: 0,
-      totalXp: 0,
-      streak: 0,
-      achievements: [],
-      badges: [],
-    },
-    appliedTemplates: Array.isArray(userData.appliedTemplates) ? userData.appliedTemplates : [],
-    notificationSettings: userData.notificationSettings || {},
-    setupCompleted: Boolean(userData.setupCompleted),
-    calendarPreferences: userData.calendarPreferences || {},
-  }
+  return storage.validateUserData(userData)
 }
 
 // Default export for compatibility

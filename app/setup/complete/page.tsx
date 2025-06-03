@@ -12,23 +12,41 @@ export default function SetupComplete() {
   const router = useRouter()
   const [userData, setUserData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const initializeCompletion = async () => {
       try {
+        console.log("🔄 Loading setup completion page...")
         const storedUserData = storage.getUserData()
 
-        if (!storedUserData || !setupManager.isSetupComplete()) {
-          console.log("⚠️ Setup not complete, redirecting to setup")
+        if (!storedUserData) {
+          console.error("❌ No user data found, redirecting to setup")
           router.push("/setup/personal-info")
           return
         }
 
+        // Validate setup data
+        const validation = setupManager.validateSetupData()
+        if (!validation.isValid) {
+          const missingSteps = validation.missingFields.join(", ")
+          console.error(`❌ Setup validation failed. Missing: ${missingSteps}`)
+          router.push("/setup/personal-info")
+          return
+        }
+
+        // If we reach here, data is valid
+        console.log("✅ User data loaded successfully:", storedUserData)
         setUserData(storedUserData)
-        console.log("🎉 Setup completion page loaded", storedUserData)
+
+        // Mark setup as completed if not already
+        if (!storedUserData.setupCompleted) {
+          console.log("🔄 Marking setup as completed...")
+          setupManager.completeSetup()
+        }
       } catch (error) {
-        console.error("❌ Error loading completion page:", error)
-        router.push("/setup/personal-info")
+        console.error("❌ Error in setup completion:", error)
+        setError("An error occurred during setup completion. Please try again.")
       } finally {
         setIsLoading(false)
       }
@@ -38,8 +56,25 @@ export default function SetupComplete() {
   }, [router])
 
   const handleContinueToDashboard = () => {
-    console.log("🚀 Navigating to dashboard")
-    router.push("/dashboard")
+    try {
+      console.log("🚀 Navigating to dashboard")
+
+      // Ensure setup is marked complete before proceeding
+      const userData = storage.getUserData()
+      if (!userData?.setupCompleted) {
+        setupManager.completeSetup()
+      }
+
+      // Force a page reload to clear any stale state
+      if (typeof window !== "undefined") {
+        window.location.href = "/dashboard"
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (error) {
+      console.error("❌ Navigation error:", error)
+      setError("Failed to navigate to dashboard. Please try again.")
+    }
   }
 
   if (isLoading) {
@@ -49,6 +84,26 @@ export default function SetupComplete() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-green-800">Finalizing your setup...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 via-stone-50 to-green-100">
+        <Card className="w-full max-w-md border-red-200 bg-white/90">
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl font-bold text-red-700">Setup Error</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-red-600">{error}</p>
+            <div className="flex justify-center">
+              <Button onClick={() => router.push("/setup/personal-info")} className="bg-red-600 hover:bg-red-700">
+                Restart Setup
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -85,10 +140,10 @@ export default function SetupComplete() {
               <div>
                 <h4 className="font-medium text-green-700 mb-2">Personal Info</h4>
                 <p className="text-sm text-stone-600">
-                  <strong>Name:</strong> {userData.name}
+                  <strong>Name:</strong> {userData.name || "Climber"}
                 </p>
                 <p className="text-sm text-stone-600">
-                  <strong>Start Date:</strong> {userData.startDate}
+                  <strong>Start Date:</strong> {userData.startDate || new Date().toISOString().split("T")[0]}
                 </p>
                 {userData.email && (
                   <p className="text-sm text-stone-600">

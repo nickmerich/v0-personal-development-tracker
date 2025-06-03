@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { useSimpleAuth } from "@/components/simple-auth-provider"
 import { storage } from "@/lib/storage"
+import { setupManager } from "@/lib/setup-manager"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -35,18 +36,34 @@ export default function DashboardPage() {
   const [userData, setUserData] = useState<any>(null)
   const [activeTab, setActiveTab] = useState("overview")
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load user data from storage
-    try {
-      const data = storage.getUserData()
-      setUserData(data)
-      setIsLoading(false)
-    } catch (error) {
-      console.error("Error loading user data:", error)
-      setIsLoading(false)
+    // Check setup completion and load user data
+    const initializeDashboard = async () => {
+      try {
+        console.log("🔄 Initializing dashboard...")
+        const data = storage.getUserData()
+
+        // Verify setup is actually complete
+        if (!data || !setupManager.isSetupComplete()) {
+          console.log("❌ Setup not complete, redirecting to setup")
+          router.push("/setup/personal-info")
+          return
+        }
+
+        console.log("✅ Setup is complete, loading dashboard")
+        setUserData(data)
+      } catch (error) {
+        console.error("❌ Dashboard initialization error:", error)
+        setError("Failed to load dashboard data. Please try again.")
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [])
+
+    initializeDashboard()
+  }, [router])
 
   const handleNavigation = (path: string) => {
     console.log(`🧭 Navigating to: ${path}`)
@@ -77,6 +94,39 @@ export default function DashboardPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <p className="text-green-800 font-medium">🏔️ Loading your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-red-200">
+          <CardHeader>
+            <CardTitle className="text-red-700">Dashboard Error</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-red-600">{error}</p>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+              <Button className="bg-red-600 hover:bg-red-700" onClick={() => handleNavigation("/setup/personal-info")}>
+                Return to Setup
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!userData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-green-800">Redirecting to setup...</p>
         </div>
       </div>
     )
@@ -388,24 +438,30 @@ export default function DashboardPage() {
         {/* Navigation Test Section */}
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>🧭 Navigation Test Center</CardTitle>
+            <CardTitle>🧭 Navigation Center</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
               <Button variant="outline" onClick={() => handleNavigation("/")}>
                 🏠 Home
               </Button>
-              <Button variant="outline" onClick={() => handleNavigation("/setup/personal-info")}>
-                👤 Profile Setup
-              </Button>
               <Button variant="outline" onClick={() => handleNavigation("/templates")}>
                 ✨ Templates
               </Button>
-              <Button variant="outline" onClick={() => handleNavigation("/database-test")}>
-                🗄️ Database Test
+              <Button variant="outline" onClick={() => handleNavigation("/settings")}>
+                ⚙️ Settings
               </Button>
-              <Button variant="outline" onClick={() => handleNavigation("/routing-test")}>
-                🧪 Routing Test
+              <Button variant="outline" onClick={() => handleNavigation("/profile")}>
+                👤 Profile
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setupManager.resetSetup()
+                  handleNavigation("/setup/personal-info")
+                }}
+              >
+                🔄 Reset Setup
               </Button>
             </div>
           </CardContent>
