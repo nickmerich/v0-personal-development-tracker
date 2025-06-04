@@ -1,136 +1,68 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { ArrowRight, ArrowLeft, Heart } from "lucide-react"
-import { SetupProgress } from "@/components/setup-progress"
-import { storage } from "@/lib/storage"
-import { setupManager } from "@/lib/setup-manager"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
 
-export default function MyWhy() {
+const formSchema = z.object({
+  why: z.string().min(2, {
+    message: "Why must be at least 2 characters.",
+  }),
+})
+
+export default function MyWhyPage() {
   const router = useRouter()
-  const [myWhy, setMyWhy] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null)
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      why: "",
+    },
+  })
 
-  useEffect(() => {
-    // Load existing data if available
-    const userData = storage.getUserData()
-    if (userData?.myWhy) {
-      setMyWhy(userData.myWhy)
-    }
-
-    // Check if previous step was completed
-    if (!setupManager.isStepCompleted("personal-info")) {
-      router.push("/setup/personal-info")
-    }
-
-    setIsLoading(false)
-  }, [router])
-
-  // Auto-save when typing stops
-  useEffect(() => {
-    if (myWhy.trim() && !isSaving) {
-      if (saveTimeout) clearTimeout(saveTimeout)
-
-      const timeout = setTimeout(() => {
-        handleAutoSave()
-      }, 1000)
-
-      setSaveTimeout(timeout)
-    }
-
-    return () => {
-      if (saveTimeout) clearTimeout(saveTimeout)
-    }
-  }, [myWhy])
-
-  const handleAutoSave = async () => {
-    if (!myWhy.trim()) return
-
-    setIsSaving(true)
-    try {
-      storage.updateUserData({ myWhy: myWhy.trim() })
-    } catch (error) {
-      console.error("Error auto-saving:", error)
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleNext = async () => {
-    if (!myWhy.trim()) return
-
-    setIsLoading(true)
-
-    try {
-      // Save data
-      storage.updateUserData({ myWhy: myWhy.trim() })
-
-      // Mark step as completed
-      setupManager.markStepCompleted("my-why")
-
-      // Navigate to next step
-      router.push("/setup/big-goal")
-    } catch (error) {
-      console.error("Error saving my why:", error)
-    } finally {
-      setIsLoading(false)
-    }
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    localStorage.setItem("why", values.why)
+    router.push("/setup/my-values")
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 via-stone-50 to-green-100 p-4">
-      <Card className="w-full max-w-md border-green-200 bg-white/90 backdrop-blur-sm shadow-xl">
-        <CardHeader>
-          <SetupProgress currentStep={2} totalSteps={5} />
-          <div className="mx-auto mt-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <Heart className="h-6 w-6 text-green-600" />
-          </div>
-          <CardTitle className="text-2xl font-bold text-center text-green-800">What's Your Why?</CardTitle>
-          <CardDescription className="text-center text-stone-600">
-            Define your deep motivation for personal growth
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-stone-700">
-              Your "why" is your purpose, cause or belief that inspires you. It's the foundation of your journey.
-            </p>
-            <Textarea
-              placeholder="I want to improve because..."
-              value={myWhy}
-              onChange={(e) => setMyWhy(e.target.value)}
-              className="min-h-[150px] border-green-300 focus:border-green-500 focus:ring-green-200"
+    <div className="container mx-auto max-w-2xl">
+      <h1 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0">
+        My Why
+      </h1>
+      <div className="py-4">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="why"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Why does building this matter to you?</FormLabel>
+                  <FormControl>
+                    <Input placeholder="I want to build this because..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <p className="text-xs text-stone-500 italic">
-              Example: "I want to be the best version of myself so I can inspire my children and leave a positive impact
-              on the world."
+            <p className="text-sm text-muted-foreground">
+              Understanding your motivations is like laying the foundation for a strong structure. It provides the
+              purpose and direction for your endeavors. Consider:
             </p>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => router.push("/setup/personal-info")}
-            className="border-green-300 text-green-600 hover:bg-green-50"
-            disabled={isLoading}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back
-          </Button>
-          <Button
-            onClick={handleNext}
-            disabled={!myWhy.trim() || isLoading}
-            className="bg-green-600 text-white hover:bg-green-700 shadow-lg"
-          >
-            {isLoading ? "Saving..." : "Continue"} <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </CardFooter>
-      </Card>
+            <ul className="list-disc pl-5 text-sm text-muted-foreground">
+              <li>I want to build this because it solves a problem I face.</li>
+              <li>I want to build this because it allows me to express my creativity.</li>
+              <li>I want to build this because it will help me grow and learn new skills.</li>
+              <li>I want to build this because it aligns with my long-term goals.</li>
+            </ul>
+            <Button type="submit">Next</Button>
+          </form>
+        </Form>
+      </div>
     </div>
   )
 }

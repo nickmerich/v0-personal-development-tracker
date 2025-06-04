@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -93,7 +92,7 @@ export function MobileInput({
           </Button>
         )}
 
-        {value && !error && (
+        {value && !error && type !== "password" && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <Check className="h-4 w-4 text-green-500" />
           </div>
@@ -255,7 +254,6 @@ export function MobileForm({
   )
 }
 
-// Mobile-optimized tag input
 interface MobileTagInputProps {
   label: string
   tags: string[]

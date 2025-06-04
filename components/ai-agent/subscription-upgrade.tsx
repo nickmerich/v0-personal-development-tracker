@@ -1,13 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Check, Crown, Zap, Brain, Users, Star, ArrowRight, Sparkles } from "lucide-react"
+import { Check, Crown, Users, Zap, MessageSquare, TrendingUp, Calendar, Shield } from "lucide-react"
 import { aiAgentService } from "@/lib/ai-agent-service"
-import { cn } from "@/lib/utils"
 
 interface SubscriptionUpgradeProps {
   currentTier: "free" | "premium" | "enterprise"
@@ -15,223 +12,156 @@ interface SubscriptionUpgradeProps {
 }
 
 export function SubscriptionUpgrade({ currentTier, onUpgrade }: SubscriptionUpgradeProps) {
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("monthly")
-  const [loading, setLoading] = useState(false)
-
-  const freeFeatures = aiAgentService.getSubscriptionFeatures("free")
-  const premiumFeatures = aiAgentService.getSubscriptionFeatures("premium")
-  const enterpriseFeatures = aiAgentService.getSubscriptionFeatures("enterprise")
-
-  const pricingPlans = {
-    free: {
-      name: "Starter",
-      monthlyPrice: 0,
-      annualPrice: 0,
-      description: "Get started with basic AI guidance",
-      features: freeFeatures.features,
-      limitations: ["3 nudges per day", "No AI coaching", "Basic analytics only"],
-      popular: false,
+  const plans = [
+    {
+      id: "free",
+      name: "Free",
+      price: 0,
+      period: "forever",
+      description: "Perfect for getting started with AI-powered personal development",
+      features: aiAgentService.getSubscriptionFeatures("free"),
+      icon: Zap,
+      color: "border-stone-200",
+      buttonText: "Current Plan",
+      disabled: currentTier === "free",
     },
-    premium: {
-      name: "Pro",
-      monthlyPrice: 14.99,
-      annualPrice: 149.99,
-      description: "Full AI coaching and unlimited insights",
-      features: premiumFeatures.features,
-      limitations: [],
+    {
+      id: "premium",
+      name: "Premium",
+      price: 14.99,
+      period: "month",
+      yearlyPrice: 149.99,
+      description: "Unlock the full power of AI coaching and personalized insights",
+      features: aiAgentService.getSubscriptionFeatures("premium"),
+      icon: Crown,
+      color: "border-forest-300 ring-2 ring-forest-200",
+      buttonText: currentTier === "premium" ? "Current Plan" : "Upgrade to Premium",
+      disabled: currentTier === "premium",
       popular: true,
     },
-    enterprise: {
+    {
+      id: "enterprise",
       name: "Enterprise",
-      monthlyPrice: 199,
-      annualPrice: 1999,
-      description: "For teams and organizations",
-      features: enterpriseFeatures.features,
-      limitations: [],
-      popular: false,
+      price: 199,
+      period: "month",
+      description: "Advanced features for teams and organizations",
+      features: aiAgentService.getSubscriptionFeatures("enterprise"),
+      icon: Users,
+      color: "border-blue-300",
+      buttonText: currentTier === "enterprise" ? "Current Plan" : "Contact Sales",
+      disabled: currentTier === "enterprise",
     },
-  }
-
-  const handleUpgrade = async (tier: string) => {
-    setLoading(true)
-    try {
-      await onUpgrade(tier, selectedPlan)
-    } catch (error) {
-      console.error("Upgrade failed:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const getAnnualSavings = (monthly: number, annual: number) => {
-    const monthlyCost = monthly * 12
-    const savings = monthlyCost - annual
-    const percentage = Math.round((savings / monthlyCost) * 100)
-    return { amount: savings, percentage }
-  }
+  ]
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center gap-2">
-          <Sparkles className="h-6 w-6 text-forest-600" />
-          <h2 className="text-3xl font-bold text-forest-800">Unlock Your Full Potential</h2>
-        </div>
-        <p className="text-lg text-stone-600 max-w-2xl mx-auto">
-          Upgrade to get unlimited AI coaching, personalized insights, and advanced features to accelerate your
-          transformation
+      <div className="text-center space-y-2">
+        <h2 className="text-3xl font-bold text-forest-800">Choose Your Plan</h2>
+        <p className="text-stone-600 max-w-2xl mx-auto">
+          Unlock the full potential of AI-powered personal development with advanced coaching, unlimited nudges, and
+          deep insights.
         </p>
-      </div>
-
-      {/* Current Plan Banner */}
-      {currentTier !== "free" && (
-        <Card className="border-forest-200 bg-forest-50/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-center gap-2 text-forest-800">
-              <Crown className="h-5 w-5" />
-              <span className="font-semibold">You're currently on the {pricingPlans[currentTier].name} plan</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Billing Toggle */}
-      <div className="flex items-center justify-center">
-        <Tabs value={selectedPlan} onValueChange={(value: any) => setSelectedPlan(value)}>
-          <TabsList className="bg-forest-100">
-            <TabsTrigger value="monthly" className="data-[state=active]:bg-forest-600 data-[state=active]:text-white">
-              Monthly
-            </TabsTrigger>
-            <TabsTrigger value="annual" className="data-[state=active]:bg-forest-600 data-[state=active]:text-white">
-              Annual
-              <Badge className="ml-2 bg-green-100 text-green-800 text-xs">Save 17%</Badge>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
       </div>
 
       {/* Pricing Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {Object.entries(pricingPlans).map(([tier, plan]) => {
-          const isCurrentPlan = tier === currentTier
-          const price = selectedPlan === "monthly" ? plan.monthlyPrice : plan.annualPrice
-          const billingCycle = selectedPlan === "monthly" ? "/month" : "/year"
-
-          const savings =
-            selectedPlan === "annual" && plan.annualPrice > 0
-              ? getAnnualSavings(plan.monthlyPrice, plan.annualPrice)
-              : null
+        {plans.map((plan) => {
+          const PlanIcon = plan.icon
 
           return (
-            <Card
-              key={tier}
-              className={cn(
-                "relative transition-all duration-200",
-                plan.popular && "border-forest-400 shadow-lg scale-105",
-                isCurrentPlan && "border-green-400 bg-green-50/50",
-                !plan.popular && !isCurrentPlan && "border-forest-200",
-              )}
-            >
+            <Card key={plan.id} className={`relative ${plan.color} ${plan.popular ? "scale-105" : ""}`}>
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-forest-600 text-white px-4 py-1">
-                    <Star className="h-3 w-3 mr-1" />
-                    Most Popular
-                  </Badge>
+                  <Badge className="bg-forest-600 text-white px-4 py-1">Most Popular</Badge>
                 </div>
               )}
 
-              <CardHeader className="text-center">
-                <CardTitle className="text-forest-800 flex items-center justify-center gap-2">
-                  {tier === "free" && <Zap className="h-5 w-5" />}
-                  {tier === "premium" && <Brain className="h-5 w-5" />}
-                  {tier === "enterprise" && <Users className="h-5 w-5" />}
-                  {plan.name}
-                </CardTitle>
+              <CardHeader className="text-center pb-4">
+                <div className="flex justify-center mb-3">
+                  <div className="p-3 bg-forest-100 rounded-full">
+                    <PlanIcon className="h-8 w-8 text-forest-600" />
+                  </div>
+                </div>
+
+                <CardTitle className="text-2xl text-forest-800">{plan.name}</CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
 
-                <div className="py-4">
+                <div className="space-y-2">
                   <div className="text-4xl font-bold text-forest-800">
-                    ${price}
-                    <span className="text-lg font-normal text-stone-600">{billingCycle}</span>
+                    ${plan.price}
+                    <span className="text-lg font-normal text-stone-600">/{plan.period}</span>
                   </div>
-                  {savings && (
-                    <p className="text-sm text-green-600 mt-1">
-                      Save ${savings.amount}/year ({savings.percentage}% off)
-                    </p>
+
+                  {plan.yearlyPrice && (
+                    <div className="text-sm text-stone-600">or ${plan.yearlyPrice}/year (save 17%)</div>
                   )}
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 {/* Features List */}
                 <div className="space-y-3">
-                  {plan.features.map((feature, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-stone-700">{feature}</span>
-                    </div>
-                  ))}
+                  <h4 className="font-semibold text-forest-800 flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-600" />
+                    What's Included:
+                  </h4>
+
+                  <ul className="space-y-2">
+                    {plan.features.features.map((feature, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-stone-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                {/* Limitations */}
-                {plan.limitations.length > 0 && (
-                  <div className="pt-3 border-t border-stone-200">
-                    <p className="text-xs text-stone-500 mb-2">Limitations:</p>
-                    {plan.limitations.map((limitation, index) => (
-                      <p key={index} className="text-xs text-stone-500">
-                        • {limitation}
-                      </p>
-                    ))}
+                {/* Key Metrics */}
+                <div className="grid grid-cols-2 gap-4 p-3 bg-stone-50 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-forest-600">
+                      {plan.features.nudgesPerDay === -1 ? "∞" : plan.features.nudgesPerDay}
+                    </div>
+                    <div className="text-xs text-stone-600">Daily Nudges</div>
                   </div>
-                )}
+
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-forest-600">
+                      {plan.features.aiCoachingSessions === -1 ? "∞" : plan.features.aiCoachingSessions}
+                    </div>
+                    <div className="text-xs text-stone-600">AI Sessions</div>
+                  </div>
+                </div>
 
                 {/* Action Button */}
-                <div className="pt-4">
-                  {isCurrentPlan ? (
-                    <Button disabled className="w-full" variant="outline">
-                      Current Plan
-                    </Button>
-                  ) : tier === "free" ? (
-                    <Button variant="outline" className="w-full border-forest-300 text-forest-600" disabled>
-                      Current Plan
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => handleUpgrade(tier)}
-                      disabled={loading}
-                      className={cn(
-                        "w-full",
-                        plan.popular
-                          ? "bg-forest-600 text-white hover:bg-forest-700"
-                          : "border-forest-300 text-forest-600 hover:bg-forest-50",
-                      )}
-                      variant={plan.popular ? "default" : "outline"}
-                    >
-                      {loading ? "Processing..." : tier === "premium" ? "Upgrade to Pro" : "Contact Sales"}
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  )}
-                </div>
+                <Button
+                  onClick={() => onUpgrade(plan.id, "monthly")}
+                  disabled={plan.disabled}
+                  className={`w-full ${
+                    plan.popular
+                      ? "bg-forest-600 text-white hover:bg-forest-700"
+                      : "border-forest-300 text-forest-600 hover:bg-forest-50"
+                  }`}
+                  variant={plan.popular ? "default" : "outline"}
+                >
+                  {plan.buttonText}
+                </Button>
+
+                {plan.id === "premium" && !plan.disabled && (
+                  <Button
+                    onClick={() => onUpgrade(plan.id, "yearly")}
+                    variant="outline"
+                    className="w-full border-forest-300 text-forest-600 hover:bg-forest-50"
+                  >
+                    Choose Yearly (Save 17%)
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )
         })}
       </div>
-
-      {/* Enterprise Contact */}
-      <Card className="border-forest-200 bg-gradient-to-r from-forest-50 to-blue-50">
-        <CardContent className="p-6 text-center">
-          <h3 className="text-xl font-semibold text-forest-800 mb-2">Need a Custom Solution?</h3>
-          <p className="text-stone-600 mb-4">
-            Contact our team for custom enterprise pricing, integrations, and dedicated support.
-          </p>
-          <Button variant="outline" className="border-forest-300 text-forest-600 hover:bg-forest-50">
-            Contact Sales Team
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Feature Comparison */}
       <Card className="border-forest-200">
@@ -241,62 +171,121 @@ export function SubscriptionUpgrade({ currentTier, onUpgrade }: SubscriptionUpgr
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full">
               <thead>
                 <tr className="border-b border-stone-200">
                   <th className="text-left py-3 text-forest-800">Feature</th>
-                  <th className="text-center py-3 text-forest-800">Starter</th>
-                  <th className="text-center py-3 text-forest-800">Pro</th>
+                  <th className="text-center py-3 text-forest-800">Free</th>
+                  <th className="text-center py-3 text-forest-800">Premium</th>
                   <th className="text-center py-3 text-forest-800">Enterprise</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-200">
-                <tr>
-                  <td className="py-3 text-stone-700">Daily AI Nudges</td>
-                  <td className="text-center py-3">3 per day</td>
-                  <td className="text-center py-3">
-                    <Check className="h-4 w-4 text-green-500 mx-auto" />
+              <tbody className="space-y-2">
+                <tr className="border-b border-stone-100">
+                  <td className="py-3 flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-forest-600" />
+                    Daily AI Nudges
                   </td>
-                  <td className="text-center py-3">
-                    <Check className="h-4 w-4 text-green-500 mx-auto" />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-3 text-stone-700">AI Coaching Sessions</td>
-                  <td className="text-center py-3">-</td>
-                  <td className="text-center py-3">4 per month</td>
+                  <td className="text-center py-3">3</td>
+                  <td className="text-center py-3">Unlimited</td>
                   <td className="text-center py-3">Unlimited</td>
                 </tr>
-                <tr>
-                  <td className="py-3 text-stone-700">Advanced Analytics</td>
+
+                <tr className="border-b border-stone-100">
+                  <td className="py-3 flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-forest-600" />
+                    AI Coaching Sessions
+                  </td>
+                  <td className="text-center py-3">-</td>
+                  <td className="text-center py-3">4/month</td>
+                  <td className="text-center py-3">Unlimited</td>
+                </tr>
+
+                <tr className="border-b border-stone-100">
+                  <td className="py-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-forest-600" />
+                    Advanced Analytics
+                  </td>
                   <td className="text-center py-3">-</td>
                   <td className="text-center py-3">
-                    <Check className="h-4 w-4 text-green-500 mx-auto" />
+                    <Check className="h-4 w-4 text-green-600 mx-auto" />
                   </td>
                   <td className="text-center py-3">
-                    <Check className="h-4 w-4 text-green-500 mx-auto" />
+                    <Check className="h-4 w-4 text-green-600 mx-auto" />
                   </td>
                 </tr>
-                <tr>
-                  <td className="py-3 text-stone-700">Calendar Integration</td>
+
+                <tr className="border-b border-stone-100">
+                  <td className="py-3 flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-forest-600" />
+                    Calendar Integration
+                  </td>
                   <td className="text-center py-3">-</td>
                   <td className="text-center py-3">
-                    <Check className="h-4 w-4 text-green-500 mx-auto" />
+                    <Check className="h-4 w-4 text-green-600 mx-auto" />
                   </td>
                   <td className="text-center py-3">
-                    <Check className="h-4 w-4 text-green-500 mx-auto" />
+                    <Check className="h-4 w-4 text-green-600 mx-auto" />
                   </td>
                 </tr>
-                <tr>
-                  <td className="py-3 text-stone-700">Team Management</td>
+
+                <tr className="border-b border-stone-100">
+                  <td className="py-3 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-forest-600" />
+                    Team Management
+                  </td>
                   <td className="text-center py-3">-</td>
                   <td className="text-center py-3">-</td>
                   <td className="text-center py-3">
-                    <Check className="h-4 w-4 text-green-500 mx-auto" />
+                    <Check className="h-4 w-4 text-green-600 mx-auto" />
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="py-3 flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-forest-600" />
+                    Priority Support
+                  </td>
+                  <td className="text-center py-3">-</td>
+                  <td className="text-center py-3">
+                    <Check className="h-4 w-4 text-green-600 mx-auto" />
+                  </td>
+                  <td className="text-center py-3">
+                    <Check className="h-4 w-4 text-green-600 mx-auto" />
                   </td>
                 </tr>
               </tbody>
             </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* FAQ */}
+      <Card className="border-forest-200">
+        <CardHeader>
+          <CardTitle className="text-forest-800">Frequently Asked Questions</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <h4 className="font-semibold text-forest-800 mb-2">Can I change plans anytime?</h4>
+            <p className="text-stone-600 text-sm">
+              Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-forest-800 mb-2">What happens to my data if I downgrade?</h4>
+            <p className="text-stone-600 text-sm">
+              Your data is always safe. If you downgrade, you'll simply lose access to premium features but keep all
+              your progress.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-forest-800 mb-2">Is there a free trial for Premium?</h4>
+            <p className="text-stone-600 text-sm">
+              Yes! New users get a 7-day free trial of Premium features. No credit card required.
+            </p>
           </div>
         </CardContent>
       </Card>

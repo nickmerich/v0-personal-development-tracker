@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss"
 
-const config = {
+const config: Config = {
   darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
@@ -9,7 +9,6 @@ const config = {
     "./src/**/*.{ts,tsx}",
     "*.{js,ts,jsx,tsx,mdx}",
   ],
-  prefix: "",
   theme: {
     container: {
       center: true,
@@ -19,6 +18,9 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        inter: ["Inter", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -26,7 +28,7 @@ const config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#16A34A", // Forest Green
+          DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
@@ -53,43 +55,17 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Nature-inspired color palette
-        forest: {
-          50: "#F0FDF4",
-          100: "#DCFCE7",
-          200: "#BBF7D0",
-          300: "#86EFAC",
-          400: "#4ADE80",
-          500: "#22C55E",
-          600: "#16A34A",
-          700: "#15803D",
-          800: "#166534",
-          900: "#14532D",
-        },
-        stone: {
-          50: "#FAFAF9",
-          100: "#F5F5F4",
-          200: "#E7E5E4",
-          300: "#D6D3D1",
-          400: "#A8A29E",
-          500: "#78716C",
-          600: "#57534E",
-          700: "#44403C",
-          800: "#292524",
-          900: "#1C1917",
-        },
-        earth: {
-          50: "#FFFBEB",
-          100: "#FEF3C7",
-          200: "#FDE68A",
-          300: "#FCD34D",
-          400: "#FBBF24",
-          500: "#F59E0B",
-          600: "#D97706",
-          700: "#B45309",
-          800: "#92400E",
-          900: "#78350F",
-        },
+        // Reference Design Colors
+        "cream-bg": "hsl(var(--cream-bg))",
+        "cream-light": "hsl(var(--cream-light))",
+        "navy-text": "hsl(var(--navy-text))",
+        "green-primary": "hsl(var(--green-primary))",
+        "green-secondary": "hsl(var(--green-secondary))",
+        "blue-primary": "hsl(var(--blue-primary))",
+        "blue-secondary": "hsl(var(--blue-secondary))",
+        "purple-primary": "hsl(var(--purple-primary))",
+        "gray-text": "hsl(var(--gray-text))",
+        "gray-light": "hsl(var(--gray-light))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -105,14 +81,24 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        float: "float 6s ease-in-out infinite",
+        "fade-in": "fade-in 0.6s ease-out",
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config
+}
 
 export default config

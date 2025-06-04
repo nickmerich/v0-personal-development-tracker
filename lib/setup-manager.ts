@@ -26,8 +26,13 @@ export const SETUP_STEPS: SetupStep[] = [
 
 export const setupManager = {
   getCompletedSteps(): string[] {
-    const userData = storage.getUserData()
-    return userData?.completedSteps || []
+    try {
+      const userData = storage.getUserData()
+      return userData?.completedSteps || []
+    } catch (error) {
+      console.error("Error getting completed steps:", error)
+      return []
+    }
   },
 
   markStepCompleted(stepId: string): void {
@@ -131,6 +136,27 @@ export const setupManager = {
     } catch (error) {
       console.error("❌ Error checking if setup is complete:", error)
       return false
+    }
+  },
+
+  getSetupStatus(): { isComplete: boolean; nextStep: string; progress: number } {
+    try {
+      const isComplete = this.isSetupComplete()
+      const nextStep = isComplete ? "/dashboard" : this.getNextIncompleteStep()
+      const progress = this.getProgressPercentage()
+
+      return {
+        isComplete,
+        nextStep,
+        progress,
+      }
+    } catch (error) {
+      console.error("❌ Error getting setup status:", error)
+      return {
+        isComplete: false,
+        nextStep: "/setup/personal-info",
+        progress: 0,
+      }
     }
   },
 

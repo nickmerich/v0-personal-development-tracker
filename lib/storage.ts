@@ -29,6 +29,21 @@ export interface UserData {
 class StorageService {
   private prefix = "gryt_"
 
+  // Test if storage is available
+  testStorage(): boolean {
+    if (typeof window === "undefined") return false
+
+    try {
+      const testKey = this.prefix + "test"
+      localStorage.setItem(testKey, "test")
+      localStorage.removeItem(testKey)
+      return true
+    } catch (error) {
+      console.error("Storage test failed:", error)
+      return false
+    }
+  }
+
   // Get item from localStorage
   get(key: string): any {
     if (typeof window === "undefined") return null

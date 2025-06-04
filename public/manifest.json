@@ -1,0 +1,27 @@
+{
+  "name": "The Gryt - Build Your Life Through Daily Habits",
+  "short_name": "The Gryt",
+  "description": "Stop trying to transform overnight. Start building daily.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F0FDF4",
+  "theme_color": "#16A34A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "lifestyle", "health"],
+  "lang": "en",
+  "dir": "ltr"
+}

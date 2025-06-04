@@ -26,12 +26,15 @@ interface EnhancedJournalModalProps {
 const REFLECTION_PROMPTS = [
   "What did I accomplish successfully today?",
   "What challenges did I overcome?",
-  "How did I grow stronger today?",
-  "What progress did I make toward my goals?",
+  "What did I build today?",
+  "How did I build toward my goals today?",
   "What lesson did I learn today?",
-  "How did I help others or myself?",
+  "What positive things did I build today?",
   "What am I excited to work on tomorrow?",
   "If I could redo today, what would I do differently?",
+  "What foundation did I lay today?",
+  "How am I building my ideal life?",
+  "What building blocks did I add today?",
 ]
 
 const MOOD_OPTIONS = [
